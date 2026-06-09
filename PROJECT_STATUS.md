@@ -1,6 +1,6 @@
 # Project Status
 
-Last updated: 2026-06-04
+Last updated: 2026-06-09
 
 ## Current Scope
 
@@ -13,11 +13,17 @@ Reel Pipeline is an AI reel generation product that turns input text and project
 - **Prototype signal-to-reel draft generator** (`src/signal-draft-generator.js`): fixture brief → 2+ variant bundles (storyboard, script, shot list, captions) with claim/evidence review and unsupported-claim rejection.
 - CLI: `npm run draft:signal -- --fixture test/fixtures/high-signal-reel-brief.json`
 - Tests: `test/signal-draft-generator.test.js` (run via `npm test`).
+- OSS media-pipeline integrations were evaluated in
+  `docs/oss-integration-evaluation.md`; the current decision is no new
+  dependency yet, with optional WhisperX/stable-ts caption-alignment QA as the
+  first low-risk adapter.
 
 ## Planned Next
 
 - Wire draft bundle output into review UI and optional render queue without paid engines.
 - SaaS Maker task linkage for generated draft bundles.
+- Add fixture-backed caption QA for rendered drafts before real posting or paid
+  UGC engines.
 
 ## Deferred / Parked
 
