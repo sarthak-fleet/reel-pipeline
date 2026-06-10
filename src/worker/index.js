@@ -142,7 +142,22 @@ async function serveArtifact(key, env, request) {
   if (!isSafeKey(key)) return json({ error: 'invalid artifact key' }, 400);
 
   const range = parseRange(request.headers.get('range'));
-  const object = await env.REEL_ARTIFACTS.get(key, range ? { range } : undefined);
+  let object;
+  try {
+    object = await env.REEL_ARTIFACTS.get(key, range ? { range } : undefined);
+  } catch {
+    // R2 throws on unsatisfiable ranges (offset at/past end of object);
+    // video players probe with ranges, so answer 416 instead of 500.
+    const head = await env.REEL_ARTIFACTS.head(key);
+    if (!head) return json({ error: 'artifact not found' }, 404);
+    return new Response(null, {
+      status: 416,
+      headers: {
+        'content-range': `bytes */${head.size}`,
+        'accept-ranges': 'bytes',
+      },
+    });
+  }
   if (!object) return json({ error: 'artifact not found' }, 404);
 
   const headers = new Headers();
@@ -153,8 +168,12 @@ async function serveArtifact(key, env, request) {
   headers.set('accept-ranges', 'bytes');
   if (!headers.has('content-type')) headers.set('content-type', contentTypeFor(key));
   if (range && typeof object.size === 'number') {
-    const offset = range.offset ?? 0;
-    const length = range.length ?? object.size - offset;
+    // Describe the range R2 actually satisfied (object.range), clamped to
+    // the object size — a request like bytes=0-999999999 on a smaller file
+    // must not overstate content-length or the download truncates.
+    const satisfied = object.range ?? range;
+    const offset = satisfied.offset ?? 0;
+    const length = Math.min(satisfied.length ?? object.size - offset, object.size - offset);
     headers.set('content-range', `bytes ${offset}-${offset + length - 1}/${object.size}`);
     headers.set('content-length', String(length));
     return new Response(object.body, { status: 206, headers });

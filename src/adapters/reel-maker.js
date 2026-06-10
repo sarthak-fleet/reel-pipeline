@@ -91,8 +91,11 @@ export class ReelMakerAdapter {
       try {
         await this.commandRunner('bunx', remotionRenderArgs(slug, outPath), { cwd: this.engineDir, timeout: 300_000 });
       } catch (error) {
-        renderLog.push(`remotion_render_failed: ${formatError(error)}`);
-        await writeFile(outPath, `remotion render placeholder for ${slug}\n`);
+        // Do NOT write a placeholder and report success here: callers publish
+        // `completed` renders to R2 as video/mp4 and sync the URL back to the
+        // marketing queue, which would turn a failed render into a "valid"
+        // artifact that blocks future render attempts.
+        throw new Error(`remotion render failed for ${slug}: ${formatError(error)}`);
       }
     } else {
       await writeFile(outPath, `mock reel-maker render for ${slug}\n`);
