@@ -195,6 +195,18 @@ test('builds SaaS Maker marketing patch from a render result', () => {
   assert.match(patch.notes, /provider: mock/);
 });
 
+test('builds SaaS Maker marketing patch from a single videoUrl render result', () => {
+  const patch = renderPatchForMarketingPost({
+    provider: 'mock',
+    externalTaskId: 'render-1',
+    status: 'completed',
+    videoUrl: 'https://cdn.example.test/final.mp4',
+  });
+
+  assert.equal(patch.asset_url, 'https://cdn.example.test/final.mp4');
+  assert.equal(patch.result_url, 'https://cdn.example.test/final.mp4');
+});
+
 test('publishes local render artifacts to a configured public directory', async () => {
   const published = await publishRenderArtifacts({
     provider: 'mock',
