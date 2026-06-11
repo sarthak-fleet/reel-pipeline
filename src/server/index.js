@@ -50,7 +50,7 @@ export function createServer(options = {}) {
           reelStore: reelOptions.reelStore,
           mode: body.mode,
           force: body.force,
-          allowUnapproved: body.allowUnapproved,
+          allowUnapproved: options.allowUnapproved ?? false,
           variantCount: body.variantCount,
         });
         if (!data) return json(res, 404, { error: 'reel not found' });

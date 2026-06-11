@@ -315,7 +315,7 @@ function requiredStore(store) {
 }
 
 function firstVideoUrl(job) {
-  return job?.render?.videos?.[0] ?? job?.render?.videoUrl ?? null;
+  return job?.render?.videos?.[0] ?? job?.render?.combinedVideos?.[0] ?? job?.render?.videoUrl ?? null;
 }
 
 function safeId(id) {

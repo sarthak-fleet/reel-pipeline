@@ -146,6 +146,57 @@ test('worker renders approved reel drafts into R2 mock artifacts', async () => {
   assert.equal(readyPayload.data.status, 'ready_to_post');
 });
 
+test('worker ignores allowUnapproved in the public render body', async () => {
+  const env = { REEL_ARTIFACTS: createR2Mock() };
+  await worker.fetch(new Request('https://assets.example.test/reels', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      id: 'worker-allow-unapproved',
+      projectSlug: 'linkchat',
+      realDetails: 'Public renders must still respect approval.',
+      goal: 'Show creators a profile can answer first',
+      channel: 'tiktok',
+    }),
+  }), env);
+
+  const rendered = await worker.fetch(new Request('https://assets.example.test/reels/worker-allow-unapproved/render', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'mock', allowUnapproved: true }),
+  }), env);
+  assert.equal(rendered.status, 400);
+  assert.match(await rendered.text(), /approved before rendering/);
+});
+
+test('worker derives artifact URLs from the current deployment origin', async () => {
+  const env = { REEL_ARTIFACTS: createR2Mock() };
+  await worker.fetch(new Request('https://preview.example.test/reels', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      id: 'worker-origin',
+      projectSlug: 'linkchat',
+      realDetails: 'Artifact URLs should follow the current host.',
+      goal: 'Show creators a profile can answer first',
+      channel: 'tiktok',
+    }),
+  }), env);
+  await worker.fetch(new Request('https://preview.example.test/reels/worker-origin/decision', {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ decision: 'approve' }),
+  }), env);
+
+  const rendered = await worker.fetch(new Request('https://preview.example.test/reels/worker-origin/render', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ mode: 'mock' }),
+  }), env);
+  const payload = await rendered.json();
+  assert.match(payload.data.reel.assetUrl, /^https:\/\/preview\.example\.test\/reels\/worker-origin-draft\.mp4$/);
+});
+
 test('artifact worker supports byte ranges for video playback', async () => {
   const env = {
     REEL_ARTIFACTS: {

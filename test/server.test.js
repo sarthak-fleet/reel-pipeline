@@ -241,3 +241,34 @@ test('HTTP API refuses to render unapproved reel drafts', async () => {
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('HTTP API ignores allowUnapproved in the public render body', async () => {
+  const reelStore = new FileReelStore({ dir: './tmp/server-test-reels-allow-unapproved' });
+  const server = createServer({ reelStore });
+  await new Promise(resolve => server.listen(0, resolve));
+  const { port } = server.address();
+
+  try {
+    await fetch(`http://127.0.0.1:${port}/reels`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: 'server-allow-unapproved',
+        projectSlug: 'linkchat',
+        goal: 'Show a product moment',
+        realDetails: 'Users need to approve before rendering.',
+        channel: 'tiktok',
+      }),
+    });
+
+    const rendered = await fetch(`http://127.0.0.1:${port}/reels/server-allow-unapproved/render`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ mode: 'mock', allowUnapproved: true }),
+    });
+    assert.equal(rendered.status, 400);
+    assert.match(await rendered.text(), /approved before rendering/);
+  } finally {
+    await new Promise(resolve => server.close(resolve));
+  }
+});
