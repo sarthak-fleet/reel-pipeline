@@ -351,7 +351,7 @@ Do not commit `.env` files or provider tokens.
 
 Expected local variables when connecting to real SaaS Maker / providers:
 
-- `SAASMAKER_API_URL` or default `https://api.sassmaker.com`
+- `SAASMAKER_API_URL` or default `https://api.saasmaker.com`
 - `SAASMAKER_SESSION_TOKEN` for session-auth Marketing Queue access
 - `MONEYPRINTER_API_URL` or default `http://127.0.0.1:8080`
 - Provider-specific keys stored in the relevant engine config, not in this repo
