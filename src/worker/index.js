@@ -53,15 +53,19 @@ export default {
 
     const renderMatch = request.method === 'POST' && url.pathname.match(/^\/reels\/([^/]+)\/render$/);
     if (renderMatch) {
-      const reelStore = new R2ReelStore(env.REEL_ARTIFACTS);
-      const id = decodeURIComponent(renderMatch[1]);
-      const record = await reelStore.get(id);
-      if (!record) return json({ error: 'reel not found' }, 404);
-      const body = await request.json().catch(() => ({}));
-      assertRenderableReel(record, body);
-      const variantCount = Math.max(1, Math.min(6, Number(body.variantCount ?? 1)));
-      const data = await renderWorkerMockReel(record, env, reelStore, { variantCount });
-      return json({ data });
+      try {
+        const reelStore = new R2ReelStore(env.REEL_ARTIFACTS);
+        const id = decodeURIComponent(renderMatch[1]);
+        const record = await reelStore.get(id);
+        if (!record) return json({ error: 'reel not found' }, 404);
+        const body = await request.json().catch(() => ({}));
+        assertRenderableReel(record, { force: body.force, allowUnapproved: false });
+        const variantCount = Math.max(1, Math.min(6, Number(body.variantCount ?? 1)));
+        const data = await renderWorkerMockReel(record, env, reelStore, request.url, { variantCount });
+        return json({ data });
+      } catch (error) {
+        return json({ error: error instanceof Error ? error.message : String(error) }, 400);
+      }
     }
 
     const videoDecisionMatch = request.method === 'PATCH' && url.pathname.match(/^\/reels\/([^/]+)\/video-decision$/);
@@ -81,9 +85,9 @@ export default {
   },
 };
 
-async function renderWorkerMockReel(record, env, reelStore, options = {}) {
+async function renderWorkerMockReel(record, env, reelStore, requestUrl, options = {}) {
   if (!env.REEL_ARTIFACTS) throw new Error('missing REEL_ARTIFACTS binding');
-  const workerUrl = 'https://reel-pipeline-artifacts.sarthakagrawal927.workers.dev';
+  const workerUrl = new URL(requestUrl).origin;
   const variantCount = Math.max(1, Math.min(6, Number(options.variantCount ?? 1)));
 
   if (variantCount === 1) {

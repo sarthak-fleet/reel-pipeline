@@ -101,6 +101,7 @@ export async function renderReelVariants(brief, options = {}) {
 function firstUrl(published) {
   if (!published) return null;
   if (Array.isArray(published.videos)) return published.videos[0] ?? null;
+  if (Array.isArray(published.combinedVideos)) return published.combinedVideos[0] ?? null;
   return published.videoUrl ?? null;
 }
 

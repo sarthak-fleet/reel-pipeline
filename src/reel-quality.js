@@ -187,6 +187,7 @@ function firstVideoUrl(render) {
   if (!render) return null;
   if (typeof render === 'string') return render;
   if (Array.isArray(render.videos)) return render.videos[0] ?? null;
+  if (Array.isArray(render.combinedVideos)) return render.combinedVideos[0] ?? null;
   return render.videoUrl ?? null;
 }
 

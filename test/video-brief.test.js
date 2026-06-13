@@ -9,6 +9,7 @@ import { publishRenderArtifacts, publishRenderArtifactsToR2 } from '../src/artif
 import { createDraftVideo, createRenderer, getDraftVideoStatus, renderAcceptedMarketingPosts } from '../src/pipeline.js';
 import { patchForPostingResult, postReadyMarketingVideos, postingGate } from '../src/posting.js';
 import { renderPatchForMarketingPost, SaaSMakerClient } from '../src/saas-maker-client.js';
+import { scoreVariant } from '../src/reel-quality.js';
 
 const reelBody = [
   'Script: show the user pain, product proof, then payoff.',
@@ -181,6 +182,34 @@ test('mock renderer creates a completed draft artifact', async () => {
   });
   assert.equal(stored.status, 'video_ready');
   assert.equal(stored.id, result.id);
+});
+
+test('quality scoring accepts combinedVideos as the final asset', () => {
+  const score = scoreVariant({
+    brief: {
+      hook: 'Stop answering the same DM.',
+      cta: 'Ask once.',
+      body: reelBody,
+      projectSlug: 'linkchat',
+    },
+    variant: {
+      hook: 'Stop answering the same DM.',
+      cta: 'Ask once.',
+    },
+    proof: {
+      proofType: 'screenshot',
+      paths: ['proof.png'],
+    },
+    render: {
+      status: 'completed',
+      combinedVideos: ['https://cdn.example.test/final.mp4'],
+      aspect: '9:16',
+      durationSeconds: 12,
+    },
+  });
+
+  assert.equal(score.status, 'video_ready');
+  assert.equal(score.reasons.includes('no asset URL after upload'), false);
 });
 
 test('builds SaaS Maker marketing patch from a render result', () => {
