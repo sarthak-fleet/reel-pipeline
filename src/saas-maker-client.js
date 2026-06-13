@@ -65,7 +65,7 @@ export function renderPatchForMarketingPost(renderResult) {
 }
 
 function firstVideoUrl(renderResult) {
-  return normalizeUrl(renderResult.videos?.[0] ?? renderResult.combinedVideos?.[0] ?? null);
+  return normalizeUrl(renderResult.videos?.[0] ?? renderResult.combinedVideos?.[0] ?? renderResult.videoUrl ?? null);
 }
 
 function normalizeUrl(value) {
