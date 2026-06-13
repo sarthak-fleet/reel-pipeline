@@ -192,7 +192,7 @@ export async function renderAcceptedMarketingPosts(options = {}) {
 
     let current = job;
     const pollLimit = Number(options.pollLimit ?? 60);
-    for (let attempt = 0; current.status !== 'video_ready' && attempt < pollLimit; attempt += 1) {
+    for (let attempt = 0; current?.status !== 'video_ready' && attempt < pollLimit; attempt += 1) {
       await sleep(Number(options.pollIntervalMs ?? 2000));
       current = await getDraftVideoStatus(current.id, {
         ...options,

@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import test from 'node:test';
+import { promisify } from 'node:util';
 
 import { briefFromMarketingPost, normalizeVideoBrief, toMoneyPrinterRequest } from '../src/video-brief.js';
 import { MoneyPrinterTurboAdapter } from '../src/adapters/moneyprinterturbo.js';
@@ -10,6 +12,8 @@ import { createDraftVideo, createRenderer, getDraftVideoStatus, renderAcceptedMa
 import { patchForPostingResult, postReadyMarketingVideos, postingGate } from '../src/posting.js';
 import { renderPatchForMarketingPost, SaaSMakerClient } from '../src/saas-maker-client.js';
 import { scoreVariant } from '../src/reel-quality.js';
+
+const execFileAsync = promisify(execFile);
 
 const reelBody = [
   'Script: show the user pain, product proof, then payoff.',
@@ -318,6 +322,19 @@ test('SaaS Maker client skips sync when no session token is configured', async (
 test('SaaS Maker client defaults to the saasmaker base URL', () => {
   const client = new SaaSMakerClient({ sessionToken: '' });
   assert.equal(client.baseUrl, 'https://api.saasmaker.com');
+});
+
+test('post-ready CLI treats confirm=false as false', async () => {
+  await assert.rejects(
+    execFileAsync('node', [
+      'scripts/post-ready-marketing-videos.js',
+      '--confirm',
+      'false',
+      '--fixture',
+      'test/fixtures/post-ready-marketing-posts.json',
+    ], { cwd: process.cwd() }),
+    /posting requires confirmPost=true/,
+  );
 });
 
 test('SaaS Maker client patches marketing posts with bearer session token', async () => {
