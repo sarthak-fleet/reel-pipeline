@@ -84,6 +84,10 @@ test('remotion render mode maps to ReelMaker adapter', () => {
   assert.equal(createRenderer('reel-maker').constructor.name, 'ReelMakerAdapter');
 });
 
+test('ugc_actor render mode maps to OpenShorts adapter', () => {
+  assert.equal(createRenderer('ugc_actor').constructor.name, 'OpenShortsAdapter');
+});
+
 test('MoneyPrinterTurbo adapter posts to v1 video API and reads task id', async () => {
   const calls = [];
   const adapter = new MoneyPrinterTurboAdapter({

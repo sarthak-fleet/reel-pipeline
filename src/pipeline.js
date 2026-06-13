@@ -14,7 +14,7 @@ import { scoreVariant } from './reel-quality.js';
 export function createRenderer(mode = 'mock', options = {}) {
   if (mode === 'stock') return new MoneyPrinterTurboAdapter(options.moneyprinterturbo);
   if (mode === 'moneyprinterturbo') return new MoneyPrinterTurboAdapter(options.moneyprinterturbo);
-  if (mode === 'openshorts') return new OpenShortsAdapter(options.openshorts);
+  if (mode === 'openshorts' || mode === 'ugc_actor') return new OpenShortsAdapter(options.openshorts);
   if (mode === 'remotion' || mode === 'reel-maker') {
     return new ReelMakerAdapter({
       ...(options.reelMaker ?? options.reelmaker ?? {}),
