@@ -1,4 +1,7 @@
 import { SaaSMakerClient } from './saas-maker-client.js';
+import { YouTubePublisher } from './publishers/youtube.js';
+import { InstagramPublisher } from './publishers/instagram.js';
+import { AccountRouter } from './config/social-accounts.js';
 
 const REEL_CHANNELS = new Set(['tiktok', 'instagram_reels', 'youtube_shorts']);
 
@@ -55,10 +58,129 @@ export class UploadPostProvider {
   }
 }
 
+export class YouTubePostingProvider {
+  constructor(options = {}) {
+    this.resolveLocalPath = options.resolveLocalPath ?? defaultLocalPathResolver;
+    if (options.publisher) {
+      this.singlePublisher = options.publisher;
+    } else if (options.accounts) {
+      this.router = new AccountRouter(options.accounts);
+      this.publisherCache = new Map();
+      this.publisherFactory = options.publisherFactory ?? ((account) => new YouTubePublisher(account));
+    } else {
+      throw new Error('YouTubePostingProvider requires `accounts` config or a `publisher`');
+    }
+  }
+
+  publisherFor(marketingPost) {
+    if (this.singlePublisher) return { publisher: this.singlePublisher, accountSlug: null };
+    const account = this.router.route(marketingPost);
+    if (!this.publisherCache.has(account.slug)) {
+      this.publisherCache.set(account.slug, this.publisherFactory(account));
+    }
+    return { publisher: this.publisherCache.get(account.slug), accountSlug: account.slug };
+  }
+
+  async post(marketingPost) {
+    if (marketingPost.channel !== 'youtube_shorts') {
+      throw new Error(`YouTubePostingProvider only handles youtube_shorts (got ${marketingPost.channel})`);
+    }
+    const videoPath = await this.resolveLocalPath(marketingPost);
+    if (!videoPath) throw new Error(`no local video path for marketing post ${marketingPost.id}`);
+    const { publisher, accountSlug } = this.publisherFor(marketingPost);
+    const result = await publisher.upload({
+      videoPath,
+      title: marketingPost.title,
+      description: buildCaption(marketingPost),
+      tags: marketingPost.tags,
+      publishAt: marketingPost.scheduled_for,
+    });
+    return {
+      provider: 'youtube',
+      accountSlug,
+      status: result.publishAt ? 'scheduled' : 'posted',
+      channel: marketingPost.channel,
+      assetUrl: marketingPost.result_url ?? marketingPost.asset_url,
+      externalUrl: result.url,
+      postedAt: result.publishAt ? null : new Date().toISOString(),
+      scheduledFor: result.publishAt,
+      raw: result.raw,
+    };
+  }
+}
+
+export class InstagramPostingProvider {
+  constructor(options = {}) {
+    if (options.publisher) {
+      this.singlePublisher = options.publisher;
+    } else if (options.accounts) {
+      this.router = new AccountRouter(options.accounts);
+      this.publisherCache = new Map();
+      this.publisherFactory = options.publisherFactory ?? ((account) => new InstagramPublisher(account));
+    } else {
+      throw new Error('InstagramPostingProvider requires `accounts` config or a `publisher`');
+    }
+  }
+
+  publisherFor(marketingPost) {
+    if (this.singlePublisher) return { publisher: this.singlePublisher, accountSlug: null };
+    const account = this.router.route(marketingPost);
+    if (!this.publisherCache.has(account.slug)) {
+      this.publisherCache.set(account.slug, this.publisherFactory(account));
+    }
+    return { publisher: this.publisherCache.get(account.slug), accountSlug: account.slug };
+  }
+
+  async post(marketingPost) {
+    if (marketingPost.channel !== 'instagram_reels') {
+      throw new Error(`InstagramPostingProvider only handles instagram_reels (got ${marketingPost.channel})`);
+    }
+    const videoUrl = marketingPost.result_url ?? marketingPost.asset_url;
+    if (!videoUrl) throw new Error(`no rendered asset URL for marketing post ${marketingPost.id}`);
+    const { publisher, accountSlug } = this.publisherFor(marketingPost);
+    const result = await publisher.publishReel({
+      videoUrl,
+      caption: buildCaption(marketingPost),
+    });
+    return {
+      provider: 'instagram',
+      accountSlug,
+      status: 'posted',
+      channel: marketingPost.channel,
+      assetUrl: videoUrl,
+      externalUrl: result.url,
+      postedAt: new Date().toISOString(),
+      raw: result.raw,
+    };
+  }
+}
+
 export function createPostingProvider(mode = 'manual', options = {}) {
   if (mode === 'manual') return new ManualPostingProvider(options.manual);
   if (mode === 'upload-post') return new UploadPostProvider(options.uploadPost);
+  if (mode === 'youtube') return new YouTubePostingProvider(options.youtube);
+  if (mode === 'instagram') return new InstagramPostingProvider(options.instagram);
+  if (mode === 'auto') return new ChannelRoutingProvider(options);
   throw new Error(`unsupported posting provider: ${mode}`);
+}
+
+export class ChannelRoutingProvider {
+  constructor(options = {}) {
+    this.providers = {
+      youtube_shorts: options.youtubeProvider ?? (options.youtube ? new YouTubePostingProvider(options.youtube) : null),
+      instagram_reels: options.instagramProvider ?? (options.instagram ? new InstagramPostingProvider(options.instagram) : null),
+    };
+    this.fallback = options.fallback ?? new ManualPostingProvider(options.manual);
+  }
+
+  async post(marketingPost) {
+    const provider = this.providers[marketingPost.channel] ?? this.fallback;
+    return provider.post(marketingPost);
+  }
+}
+
+function defaultLocalPathResolver(post) {
+  return post.local_path ?? post.result_path ?? post.asset_path ?? null;
 }
 
 export async function postReadyMarketingVideos(options = {}) {
@@ -102,6 +224,8 @@ export function patchForPostingResult(post, posted) {
 
   if (posted.status === 'posted') {
     patch.posted_at = posted.postedAt;
+  } else if (posted.status === 'scheduled' && posted.scheduledFor) {
+    patch.scheduled_for = posted.scheduledFor;
   }
 
   return patch;

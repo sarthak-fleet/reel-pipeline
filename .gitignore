@@ -7,3 +7,5 @@ tmp/
 .reel-pipeline/
 .wrangler/
 *.log
+config/social-accounts.json
+test/fixtures/test-clip.mp4

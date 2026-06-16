@@ -1,0 +1,23 @@
+{
+  "youtube": {
+    "tutoring": {
+      "clientIdEnv": "YT_TUTORING_CLIENT_ID",
+      "clientSecretEnv": "YT_TUTORING_CLIENT_SECRET",
+      "refreshTokenEnv": "YT_TUTORING_REFRESH_TOKEN",
+      "defaultPrivacy": "private",
+      "categoryId": "27",
+      "projects": ["tutoring-q3"],
+      "default": true
+    }
+  },
+  "instagram": {
+    "tutoring": {
+      "appIdEnv": "IG_TUTORING_APP_ID",
+      "appSecretEnv": "IG_TUTORING_APP_SECRET",
+      "userIdEnv": "IG_TUTORING_USER_ID",
+      "longLivedTokenEnv": "IG_TUTORING_LONG_LIVED_TOKEN",
+      "projects": ["tutoring-q3"],
+      "default": true
+    }
+  }
+}

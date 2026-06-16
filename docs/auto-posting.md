@@ -1,0 +1,137 @@
+# Auto-posting
+
+How a finished reel reaches YouTube Shorts and Instagram Reels with zero clicks.
+
+## Current state
+
+| Platform | Mode | Status |
+|---|---|---|
+| YouTube Shorts | API auto-upload, multi-account (`src/publishers/youtube.js`) | Shipped |
+| Instagram Reels | Standard Access API, multi-account (`src/publishers/instagram.js`) | Shipped — see [`instagram-setup.md`](./instagram-setup.md) |
+| Autopilot loop | SaaS Maker → intake hold → render → post (`scripts/marketing-autopilot.js`) | Shipped |
+| Account routing | `config/social-accounts.json` + `AccountRouter` (project_slug → handle) | Shipped |
+
+Manual posting via Meta Business Suite or YouTube Studio still works as a backup — the manual provider in `src/posting.js` is unchanged.
+
+## End-to-end flow
+
+```
+SaaS Maker draft (status=pending)
+        │
+        │  N min hold window (env: AUTOPILOT_HOLD_WINDOW_MS, default 30m)
+        ▼
+auto-accept (status=accepted)
+        │
+        │  renderAcceptedMarketingPosts → MockRenderer / Remotion / MPT
+        ▼
+artifact in R2 + asset_url on the post
+        │
+        │  postReadyMarketingVideos with ChannelRoutingProvider
+        ▼
+YT publish ── or ── IG container → poll → publish
+        │
+        ▼
+status=sent, posted_at set
+```
+
+One process — `npm run autopilot` — owns the whole loop.
+
+## Hold window (review gate)
+
+Posts SaaS Maker creates start in `status: pending`. Autopilot only auto-accepts them once `created_at` is older than `AUTOPILOT_HOLD_WINDOW_MS` (default 30 min). If you reject a post in the SaaS Maker dashboard before the window expires, it never gets posted. Knob lives in `.env`; no code change to dial it in or out.
+
+To bypass the gate entirely, set `AUTOPILOT_HOLD_WINDOW_MS=0`. To run with the old human-accept-only behavior, set `AUTOPILOT_INTAKE_STATUS=__never__` so nothing matches the intake filter.
+
+## Two daemons, not one
+
+The pipeline has two long-running scripts. They are NOT redundant:
+
+| Daemon | Polls | When you'd run it |
+|---|---|---|
+| `scripts/auto-render-watcher.js` | the Cloudflare worker for the *reel* flow (swipe UI) | If you use the worker-driven flow |
+| `scripts/marketing-autopilot.js` | SaaS Maker for the *marketing-post* flow | The auto-posting path this doc describes |
+
+Both need ffmpeg + Node + a reasonable amount of RAM. Render concurrency knob: `PIPELINE_RENDER_CONCURRENCY` (default 1). See [`deployment.md`](./deployment.md) for which host to run them on.
+
+## Where to run this
+
+The autopilot is a long-running daemon + a daily token-refresh cron. **Don't run it on your active workstation** — see [`deployment.md`](./deployment.md) for the per-host setup (Hetzner CCX23 recommended; M1 16GB viable as a zero-cost fallback). That doc carries the systemd units, launchd plists, and the migration playbook.
+
+The refresh script prints new tokens to stdout; set `IG_REFRESH_OUTPUT=.env.ig-refreshed` for a sourceable fragment if you want hands-off rotation.
+
+## Multi-account config
+
+Single source of truth: `config/social-accounts.json` (gitignored; check `config/social-accounts.example.json` into VCS). Shape:
+
+```json
+{
+  "youtube": {
+    "tutoring": {
+      "clientIdEnv": "YT_TUTORING_CLIENT_ID",
+      "clientSecretEnv": "YT_TUTORING_CLIENT_SECRET",
+      "refreshTokenEnv": "YT_TUTORING_REFRESH_TOKEN",
+      "defaultPrivacy": "private",
+      "projects": ["tutoring-q3"],
+      "default": true
+    }
+  },
+  "instagram": {
+    "tutoring": {
+      "appIdEnv": "IG_TUTORING_APP_ID",
+      "appSecretEnv": "IG_TUTORING_APP_SECRET",
+      "userIdEnv": "IG_TUTORING_USER_ID",
+      "longLivedTokenEnv": "IG_TUTORING_LONG_LIVED_TOKEN",
+      "projects": ["tutoring-q3"],
+      "default": true
+    }
+  }
+}
+```
+
+Routing rule, in order of preference:
+1. `marketingPost.account_slug === <slug>` → that account.
+2. `marketingPost.project_slug` in `projects[]` → that account.
+3. Account marked `default: true` → fallback.
+
+Adding a second handle is editing the JSON + appending env vars. No code change.
+
+## One-time setup on the production node
+
+YouTube:
+```bash
+YT_TUTORING_CLIENT_ID=... YT_TUTORING_CLIENT_SECRET=... \
+  npm run yt:bootstrap
+# paste the printed refresh token into .env as YT_TUTORING_REFRESH_TOKEN
+```
+
+Instagram (per handle):
+```bash
+IG_APP_ID=... IG_APP_SECRET=... IG_ACCOUNT_SLUG=tutoring \
+  npm run ig:bootstrap
+# paste the printed USER_ID + LONG_LIVED_TOKEN into .env
+```
+
+Then verify:
+```bash
+npm run autopilot:once
+```
+
+## Operational details
+
+- **YT scheduling**: `videos.insert` accepts `status.publishAt`; the publisher forwards `marketingPost.scheduled_for`. YT uploads as `private` then auto-flips at the scheduled time.
+- **YT quota**: default 10k units/day; an upload is ~1,600 units → ~6/day per project. Request more via GCP console if needed.
+- **IG public-URL requirement**: Meta fetches the video; the pipeline must upload to R2 (`REEL_ARTIFACT_R2_BUCKET`) and pass the public URL. Local-only renders won't post.
+- **IG token TTL**: 60 days; daily refresh cron extends another 60. If a token expires (refresh job broken for 60 days), re-run `ig:bootstrap` for that handle.
+- **Failure isolation**: the autopilot logs a per-tick error and continues. A single bad post doesn't take down the loop.
+
+## Files
+
+- `src/publishers/youtube.js`, `src/publishers/instagram.js` — wire-protocol clients
+- `src/posting.js` — `YouTubePostingProvider`, `InstagramPostingProvider`, `ChannelRoutingProvider`
+- `src/config/social-accounts.js` — env-pointer loader + `AccountRouter`
+- `src/autopilot.js` — `runAutopilotTick` + `autoAcceptIntake`
+- `scripts/marketing-autopilot.js` — daemon entry point
+- `scripts/auto-render-watcher.js` — separate, worker-driven reel flow (unchanged)
+- `scripts/{youtube,instagram}-oauth-bootstrap.js` — one-shot OAuth helpers
+- `scripts/refresh-instagram-tokens.js` — daily IG token refresh
+- `config/social-accounts.example.json` — multi-account config template
