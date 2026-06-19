@@ -5,11 +5,21 @@ import { postReadyMarketingVideos } from '../posting.js';
 import { createReelDraft, decideRenderedReel, decideReelDraft, listReelDrafts } from '../reel-intake.js';
 import { reelDraftInputFromSignal } from '../signal-intake.js';
 import { reviewPageHtml } from '../review-ui.js';
+import {
+  FileLessonStore,
+  createLessonDraft,
+  decideLessonScript,
+  decideLessonVideo,
+  getLesson,
+  listLessons,
+} from '../lesson-intake.js';
+import { generateScripts, renderLesson } from '../lesson-pipeline.js';
 
 const port = Number(process.env.PORT ?? 4317);
 
 export function createServer(options = {}) {
   const reelOptions = { ...options, reelStore: options.reelStore ?? new FileReelStore(options.reelStoreOptions) };
+  const lessonOptions = { ...options, lessonStore: options.lessonStore ?? new FileLessonStore(options.lessonStoreOptions) };
   return http.createServer(async (req, res) => {
     try {
       if (req.method === 'GET' && req.url === '/health') {
@@ -76,6 +86,53 @@ export function createServer(options = {}) {
       if (req.method === 'POST' && req.url === '/marketing/post-ready') {
         const body = await readJson(req);
         const data = await postReadyMarketingVideos({ ...options, ...body });
+        return json(res, 200, { data });
+      }
+      if (req.method === 'POST' && req.url === '/lessons') {
+        const body = await readJson(req);
+        const data = await createLessonDraft(body, lessonOptions);
+        return json(res, 201, { data });
+      }
+      if (req.method === 'GET' && req.url?.startsWith('/lessons')) {
+        const url = new URL(req.url, 'http://127.0.0.1');
+        if (url.pathname === '/lessons') {
+          const data = await listLessons(Object.fromEntries(url.searchParams), lessonOptions);
+          return json(res, 200, { data });
+        }
+        const showMatch = url.pathname.match(/^\/lessons\/([^/?#]+)$/);
+        if (showMatch) {
+          const data = await getLesson(decodeURIComponent(showMatch[1]), lessonOptions);
+          if (!data) return json(res, 404, { error: 'lesson not found' });
+          return json(res, 200, { data });
+        }
+      }
+      const generateScriptsMatch = req.method === 'POST' && req.url?.match(/^\/lessons\/([^/?#]+)\/scripts$/);
+      if (generateScriptsMatch) {
+        const id = decodeURIComponent(generateScriptsMatch[1]);
+        const data = await generateScripts({ id }, lessonOptions);
+        return json(res, 200, { data });
+      }
+      const lessonScriptDecisionMatch = req.method === 'PATCH' && req.url?.match(/^\/lessons\/([^/?#]+)\/script-decision$/);
+      if (lessonScriptDecisionMatch) {
+        const body = await readJson(req);
+        const data = await decideLessonScript(decodeURIComponent(lessonScriptDecisionMatch[1]), body, lessonOptions);
+        if (!data) return json(res, 404, { error: 'lesson not found' });
+        return json(res, 200, { data });
+      }
+      const lessonRenderMatch = req.method === 'POST' && req.url?.match(/^\/lessons\/([^/?#]+)\/render$/);
+      if (lessonRenderMatch) {
+        const body = await readJson(req);
+        const data = await renderLesson(decodeURIComponent(lessonRenderMatch[1]), {
+          ...lessonOptions,
+          allowUnapproved: body.allowUnapproved ?? false,
+        });
+        return json(res, 200, { data });
+      }
+      const lessonVideoDecisionMatch = req.method === 'PATCH' && req.url?.match(/^\/lessons\/([^/?#]+)\/video-decision$/);
+      if (lessonVideoDecisionMatch) {
+        const body = await readJson(req);
+        const data = await decideLessonVideo(decodeURIComponent(lessonVideoDecisionMatch[1]), body, lessonOptions);
+        if (!data) return json(res, 404, { error: 'lesson not found' });
         return json(res, 200, { data });
       }
       const statusMatch = req.method === 'GET' && req.url?.match(/^\/renders\/([^/?#]+)$/);
