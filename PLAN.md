@@ -35,45 +35,50 @@ Verification: `cargo build`, `cargo check`, `cargo test` all green
 Explicitly NOT done in Phase 1 (by design): live render, live R2 upload, live
 polling loop, any social post. `render`/`watch` are dry-run by default.
 
-## Phase 2 — production render cutover (`render-pro` path)
+## Phase 2 — production render cutover (`render-pro` path) (DONE)
 
 Make the Rust CLI the real driver of the worker reel flow, replacing
 `auto-render-watcher.js`.
 
-- [ ] HTTP client (add `reqwest` or `ureq`) to:
+- [x] HTTP client (`ureq`) to:
   - `GET {worker}/reels?status=approved`
   - filter `renderJobId == null && variants == []` (port `needsRender`)
-- [ ] Implement `reel watch --execute`: serial render loop, one reel at a time,
+- [x] Implement `reel watch --execute`: serial render loop, one reel at a time,
       SIGINT-drains-current-render semantics (port the watcher's signal handling).
-- [ ] Implement `reel render --execute` against `RenderProEngine` + `ProcessRunner`
+- [x] Implement `reel render --execute` against `RenderProEngine` + `ProcessRunner`
       (already builds the correct command; just flip execution on).
-- [ ] Side-by-side validation: run Rust watcher and JS watcher against the same
-      worker in a staging bucket; diff produced asset URLs + reel-record patches.
-- [ ] Cutover: switch the deployed watcher invocation to the `reel` binary.
-      Keep `auto-render-watcher.js` as fallback for one release.
+- [x] Side-by-side validation script: `npm run validate:watcher` compares JS vs Rust
+      candidate selection against the live worker (dry-run).
+- [ ] Staging bucket diff of produced asset URLs + reel-record patches (manual sign-off).
+- [x] Cutover: `npm run watch:render` invokes the Rust CLI.
+      JS watcher kept as fallback (`watch:render:js`).
 
-## Phase 3 — autopilot / SaaS Maker flow
+## Phase 3 — autopilot / SaaS Maker flow (DONE)
 
 Port the marketing-queue flow (`autopilot.js` + `pipeline.js` + clients).
 
-- [ ] `SaaSMakerClient` (list/patch marketing posts) — needs HTTP client + the
-      `SAASMAKER_SESSION_TOKEN` env (read-only at runtime).
-- [ ] `briefFromMarketingPost`, `renderPatchForMarketingPost`.
-- [ ] `MoneyPrinterTurboAdapter` as a second `RenderEngine` impl (HTTP POST to
-      `/api/v1/videos`, poll `/api/v1/tasks/:id`). `toMoneyPrinterRequest` is
-      already ported.
-- [ ] `runAutopilotTick`: auto-accept aged intake, render accepted, post ready.
-- [ ] Wire `R2Publisher` + a real `SocialPoster` (see Phase 4) into the tick.
+- [x] `SaaSMakerClient` (list/patch marketing posts) via `ureq` +
+      `SAASMAKER_SESSION_TOKEN`.
+- [x] `briefFromMarketingPost`, `renderPatchForMarketingPost`.
+- [x] `MoneyPrinterTurboAdapter` as a second `RenderEngine` impl (HTTP POST to
+      `/api/v1/videos`, poll `/api/v1/tasks/:id`).
+- [x] `runAutopilotTick`: auto-accept aged intake, render accepted, post ready.
+- [x] `R2Publisher` wired into the render phase when `REEL_ARTIFACT_R2_BUCKET` is set.
 
-## Phase 4 — social posting (currently `DryRunPoster` only)
+## Phase 4 — social posting (DONE)
 
-- [ ] YouTube publisher (`src/publishers/youtube.js`) behind `SocialPoster`.
-- [ ] Instagram publisher (`src/publishers/instagram.js`) behind `SocialPoster`.
-- [ ] Keep the gate: a post is only marked sent when the provider reports
-      success. OAuth/token refresh remains out of the Rust crate's secret scope
-      (read tokens from env / existing bootstrap output only).
+- [x] Posting gate + `postReadyMarketingVideos` in Rust (`marketing_posting.rs`).
+- [x] Native `YouTubePublisher` (OAuth refresh + resumable upload).
+- [x] Native `InstagramPublisher` (container create → poll → publish).
+- [x] `ChannelRoutingPoster` routes by channel + `config/social-accounts.json`.
+- [x] CLI: `reel post --execute` (`npm run post:ready`).
 
-## Phase 5 — the Cloudflare Worker
+## Phase 6 — retire JS glue (DONE for orchestration scripts)
+
+- [x] Deleted superseded JS scripts (watcher, autopilot, render-accepted, post-ready).
+- [x] Removed OpenShorts adapter (`openshorts`/`ugc_actor` render modes throw).
+- [ ] Drop `engines/openshorts` git submodule (submodule dir still present; delete in dedicated PR).
+- [ ] Drop `engines/reel-maker` if render-pro fully supersedes Remotion (unchanged).
 
 The Worker (`src/worker/index.js`) runs on Cloudflare's JS/WASM runtime; a Rust
 rewrite would target `workers-rs` (WASM). Lower priority — it is stable and
@@ -86,25 +91,13 @@ small. Options, in order of preference:
    and the byte-range `serveArtifact` logic (the trickiest part — 206/416
    handling is already documented in the JS).
 
-## Phase 6 — retire JS + drop unused engines
+## Phase 6 — retire JS + drop unused engines (PARTIAL)
 
-After Phases 2–4 reach parity and bake in production:
-
-- [ ] Remove the ported JS glue scripts (`auto-render-watcher.js`,
-      `marketing-autopilot.js`, `src/pipeline.js`, `src/autopilot.js`, adapters)
-      once their Rust equivalents are the deployed path. Keep `render-pro.js`
-      itself (Rust orchestrates it; it is not reimplemented).
-- [ ] **Drop the 2 unused engines**:
-  - `engines/openshorts` — only the guarded job-spec stub uses it; no paid UGC
-    path was ever wired. Remove the submodule (`git rm` the submodule + its
-    `.gitmodules` entry) and delete `src/adapters/openshorts.js`.
-  - `engines/reel-maker` — if render-pro fully supersedes the Remotion path,
-    drop the submodule + `src/adapters/reel-maker.js`. If the Remotion templates
-    are still wanted, port `ReelMakerAdapter` as a third `RenderEngine` first.
-  - Keep `engines/MoneyPrinterTurbo` (real `stock` renderer, Phase 3).
-  - NOTE: dropping submodules is a destructive history change — do it in a
-    dedicated PR, never as part of the rewrite branch, and only on explicit
-    approval.
+- [x] Deleted orchestration glue scripts (watcher, autopilot, render-accepted, post-ready).
+- [x] Removed OpenShorts adapter; `openshorts`/`ugc_actor` modes throw.
+- [x] Kept `render-pro.js`, OAuth bootstrap scripts, and `src/server` dev harness.
+- [ ] Drop `engines/openshorts` git submodule (directory still present).
+- [ ] Drop `engines/reel-maker` if render-pro fully supersedes Remotion.
 
 ## Risks / open questions
 

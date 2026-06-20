@@ -55,11 +55,9 @@ pub const PROOF_TYPES: &[&str] = &[
 
 pub const RENDER_MODES: &[&str] = &[
     "stock",
-    "ugc_actor",
     "remotion",
     "reel-maker",
     "mock",
-    "openshorts",
     "moneyprinterturbo",
 ];
 

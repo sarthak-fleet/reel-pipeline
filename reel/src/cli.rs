@@ -6,6 +6,7 @@
 //!   - `validate-brief` → src/video-brief.js normalization, as a CLI lint
 //!   - `score`          → src/reel-quality.js, ad-hoc scoring of a brief
 //!   - `config`         → inspect resolved project-urls / social-accounts config
+//!   - `autopilot`      → scripts/marketing-autopilot.js (intake → render → post)
 //!
 //! Network-heavy / live actions (`render`, `watch`) default to `--dry-run`,
 //! printing the exact command that would run instead of executing it, so the
@@ -41,6 +42,12 @@ pub enum Command {
     Score(BriefArgs),
     /// Inspect resolved configuration (project URLs / social accounts shape).
     Config(ConfigArgs),
+    /// Run one marketing autopilot tick (intake → render → post).
+    Autopilot(AutopilotArgs),
+    /// Render accepted marketing posts from the SaaS Maker queue.
+    RenderAccepted(RenderAcceptedArgs),
+    /// Post ready marketing videos (gate + YouTube/Instagram).
+    Post(PostArgs),
 }
 
 #[derive(Debug, Args)]
@@ -61,15 +68,27 @@ pub struct RenderArgs {
 
 #[derive(Debug, Args)]
 pub struct WatchArgs {
-    /// Worker base URL to poll.
-    #[arg(long)]
+    /// Worker base URL to poll (`REEL_WORKER_URL`).
+    #[arg(long, env = "REEL_WORKER_URL")]
     pub worker_url: Option<String>,
-    /// One tick then exit (we never loop without --execute in Phase 1).
-    #[arg(long, default_value_t = true)]
+    /// Poll interval in milliseconds (`REEL_WATCH_INTERVAL_MS`, min 5000).
+    #[arg(long, env = "REEL_WATCH_INTERVAL_MS", default_value_t = 30_000)]
+    pub interval_ms: u64,
+    /// Max renders per poll tick (`REEL_WATCH_MAX_PER_TICK`, default 1).
+    #[arg(long, env = "REEL_WATCH_MAX_PER_TICK", default_value_t = 1)]
+    pub max_per_tick: usize,
+    /// Variants per reel passed to render-pro (`REEL_VARIANT_COUNT`).
+    #[arg(long, env = "REEL_VARIANT_COUNT", default_value_t = 1)]
+    pub variant_count: usize,
+    /// One tick then exit.
+    #[arg(long, default_value_t = false)]
     pub once: bool,
     /// Print intended actions instead of polling/rendering.
     #[arg(long, default_value_t = true)]
     pub dry_run: bool,
+    /// Actually poll the worker and run render-pro (overrides dry-run).
+    #[arg(long, default_value_t = false)]
+    pub execute: bool,
 }
 
 #[derive(Debug, Args)]
@@ -95,4 +114,79 @@ pub struct ConfigArgs {
 pub enum ConfigKind {
     ProjectUrls,
     SocialAccounts,
+}
+
+#[derive(Debug, Args)]
+pub struct AutopilotArgs {
+    /// Worker poll interval when running as a daemon (`AUTOPILOT_INTERVAL_MS`).
+    #[arg(long, env = "AUTOPILOT_INTERVAL_MS", default_value_t = 60_000)]
+    pub interval_ms: u64,
+    /// Hold window before auto-accepting intake posts (`AUTOPILOT_HOLD_WINDOW_MS`).
+    #[arg(long, env = "AUTOPILOT_HOLD_WINDOW_MS", default_value_t = 30 * 60_000)]
+    pub hold_window_ms: u64,
+    #[arg(long, env = "AUTOPILOT_INTAKE_STATUS", default_value = "pending")]
+    pub intake_status: String,
+    #[arg(long, env = "AUTOPILOT_CREATED_AT_FIELD", default_value = "created_at")]
+    pub created_at_field: String,
+    #[arg(long, env = "AUTOPILOT_LIMIT", default_value_t = 10)]
+    pub limit: usize,
+    #[arg(long, env = "REEL_RENDER_MODE", default_value = "mock")]
+    pub render_mode: String,
+    /// One tick then exit.
+    #[arg(long, default_value_t = false)]
+    pub once: bool,
+    /// Print actions without calling SaaS Maker / render / post backends.
+    #[arg(long, default_value_t = true)]
+    pub dry_run: bool,
+    /// Actually run intake, render, and post phases.
+    #[arg(long, default_value_t = false)]
+    pub execute: bool,
+    /// Fixture JSON path (local stub client; no live SaaS Maker calls).
+    #[arg(long)]
+    pub fixture: Option<PathBuf>,
+    /// Posting backend: `manual` (prepared only) or `auto` (YouTube/Instagram from config).
+    #[arg(long, env = "REEL_POST_PROVIDER", default_value = "auto")]
+    pub posting_provider: String,
+}
+
+#[derive(Debug, Args)]
+pub struct PostArgs {
+    #[arg(long, env = "REEL_POST_LIMIT", default_value_t = 5)]
+    pub limit: usize,
+    #[arg(long)]
+    pub project_slug: Option<String>,
+    #[arg(long)]
+    pub channel: Option<String>,
+    #[arg(long, default_value_t = true)]
+    pub include_unscheduled: bool,
+    #[arg(long, default_value_t = true)]
+    pub dry_run: bool,
+    #[arg(long, default_value_t = false)]
+    pub execute: bool,
+    #[arg(long, env = "REEL_POST_PROVIDER", default_value = "auto")]
+    pub posting_provider: String,
+    #[arg(long)]
+    pub fixture: Option<PathBuf>,
+}
+
+#[derive(Debug, Args)]
+pub struct RenderAcceptedArgs {
+    #[arg(long, env = "REEL_RENDER_MODE", default_value = "mock")]
+    pub render_mode: String,
+    #[arg(long, env = "REEL_RENDER_LIMIT", default_value_t = 5)]
+    pub limit: usize,
+    #[arg(long)]
+    pub project_slug: Option<String>,
+    #[arg(long)]
+    pub channel: Option<String>,
+    #[arg(long, default_value_t = 60)]
+    pub poll_limit: u32,
+    #[arg(long, default_value_t = 2000)]
+    pub poll_interval_ms: u64,
+    #[arg(long, default_value_t = true)]
+    pub dry_run: bool,
+    #[arg(long, default_value_t = false)]
+    pub execute: bool,
+    #[arg(long)]
+    pub fixture: Option<PathBuf>,
 }

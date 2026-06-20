@@ -1,32 +1,38 @@
 # Project Status
 
-Last updated: 2026-06-09
+Last updated: 2026-06-20
 
 ## Current Scope
 
-Reel Pipeline is an AI reel generation product that turns input text and project context into reviewable short-form video drafts, render jobs, artifacts, and posting handoff. Its current internal inputs are SaaS Maker marketing ideas and High Signal reel briefs, with SaaS Maker remaining the source of truth for approvals and task linkage.
+Reel Pipeline turns approved reel drafts into rendered MP4s via the worker review
+flow. The **production render path** is:
+
+`Worker (R2) → Rust watcher → node scripts/render-pro.js → R2 upload → worker patch`
+
+Marketing autopilot and posting run entirely in Rust (`reel` CLI). Node remains for
+`render-pro.js`, OAuth bootstrap scripts, and the local dev server.
 
 ## Done
 
-- VideoBrief contract, mock/MoneyPrinterTurbo/OpenShorts/reel-maker adapters, SaaS Maker sync.
-- Signal intake from High Signal reel briefs and SaaS Maker improvement fixtures (`src/signal-intake.js`).
-- **Prototype signal-to-reel draft generator** (`src/signal-draft-generator.js`): fixture brief → 2+ variant bundles (storyboard, script, shot list, captions) with claim/evidence review and unsupported-claim rejection.
-- CLI: `npm run draft:signal -- --fixture test/fixtures/high-signal-reel-brief.json`
-- Tests: `test/signal-draft-generator.test.js` (run via `npm test`).
-- OSS media-pipeline integrations were evaluated in
-  `docs/oss-integration-evaluation.md`; the current decision is no new
-  dependency yet, with optional WhisperX/stable-ts caption-alignment QA as the
-  first low-risk adapter.
+- VideoBrief contract, mock/MoneyPrinterTurbo/reel-maker adapters, SaaS Maker sync.
+- **Rust orchestrator (`reel/` crate):** 75 tests, all entrypoints on Rust CLI.
+- **Production watcher:** `npm run watch:render` → `reel watch --execute`.
+- **Marketing autopilot:** intake → render → post in Rust (`npm run autopilot`).
+- **Native social posting:** YouTube resumable upload + Instagram Graph reels in
+  `reel/src/publishers/`; `--posting-provider auto` routes by channel + account config.
+- **OpenShorts removed from pipeline:** was never a real renderer (job-spec stub only).
+  Submodule under `engines/openshorts` remains parked; adapter deleted.
+- **JS glue retired:** `auto-render-watcher.js`, `marketing-autopilot.js`,
+  `render-accepted-marketing-posts.js`, `post-ready-marketing-videos.js` deleted.
+- **Watcher parity:** `npm run validate:watcher`.
 
 ## Planned Next
 
-- Wire draft bundle output into review UI and optional render queue without paid engines.
-- SaaS Maker task linkage for generated draft bundles.
-- Add fixture-backed caption QA for rendered drafts before real posting or paid
-  UGC engines.
+- Staging sign-off on live render asset URLs after Rust watcher runs.
+- Remove `engines/openshorts` git submodule (explicit approval; submodule only).
+- Wire draft bundle output into review UI without paid engines.
 
 ## Deferred / Parked
 
-- Real UGC actor pipeline (OpenShorts paid deps).
-- Autopost provider wiring.
-- Custom artifact domain.
+- Cloudflare Worker rewrite (stay on JS).
+- reel-maker / Remotion path (keep for product-proof experiments; render-pro is canonical).

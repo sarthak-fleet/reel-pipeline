@@ -15,13 +15,21 @@
 //! remaining phases.
 
 pub mod artifact;
+pub mod autopilot;
+pub mod autopilot_daemon;
 pub mod brief;
 pub mod config;
 pub mod engine;
+pub mod marketing;
+pub mod marketing_posting;
 pub mod orchestrator;
+pub mod publishers;
 pub mod publisher;
 pub mod quality;
 pub mod runner;
+pub mod saas_maker;
 pub mod social;
 pub mod store;
 pub mod templates;
+pub mod watcher;
+pub mod worker_client;

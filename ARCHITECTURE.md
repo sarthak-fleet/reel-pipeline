@@ -114,10 +114,17 @@ RenderEngine        ── RenderProEngine  → node scripts/render-pro.js  (Chr
    │                   MockEngine       → local placeholder
 ArtifactPublisher   ── R2Publisher      → npx wrangler r2 object put
    │                   NoopPublisher    → pass-through
-SocialPoster        ── DryRunPoster     → records intent, never posts
+MarketingPoster     ── ManualPoster           → marks prepared (safe default)
+   │                   ChannelRoutingPoster  → native YouTube + Instagram
+SocialPoster        ── DryRunPoster          → worker flow (unchanged)
 CommandRunner       ── ProcessRunner    → std::process::Command
    │                   RecordingRunner  → test fake (asserts exact argv)
 ReelStore           ── FileJobStore     → JSON file per job
+MarketingClient     ── SaaSMakerClient  → ureq list/patch marketing posts
+   │                   StubMarketingClient → fixture/tests
+RenderEngine        ── MockEngine       → placeholder mp4
+   │                   MoneyPrinterEngine → HTTP /api/v1/videos + poll
+   │                   RenderProEngine    → node scripts/render-pro.js
 ```
 
 Because every external effect is a `CommandRunner` call behind a trait, the
@@ -128,16 +135,18 @@ the exact `node`/`wrangler` argv that *would* run.
 
 ```
 reel render <reelId...> [--variant-count N] [--execute]   # production path; dry-run by default
-reel watch [--worker-url URL] [--once]                    # auto-render-watcher equivalent (dry-run scaffold)
+reel watch [--worker-url URL] [--once] [--execute]        # auto-render-watcher equivalent
+reel autopilot [--once] [--execute] [--fixture path]      # marketing-autopilot equivalent
+reel render-accepted [--execute] [--fixture path]       # render accepted marketing posts
+reel post [--execute] [--posting-provider auto|manual]  # post ready marketing videos
 reel plan <brief.json> [--variant-count N]                # preview templates + hooks
 reel validate-brief <brief.json>                          # VideoBrief lint
 reel score <brief.json>                                   # quality heuristics
 reel config <project-urls|social-accounts>                # inspect resolved config
 ```
 
-`render`/`watch` print the exact command they would run unless `--execute` is
-passed, so the binary is safe to run with no render environment and never
-performs a live render or post in Phase 1.
+`render`/`watch`/`autopilot`/`post` print intended actions unless `--execute` is passed.
+Use `--posting-provider manual` for dry-run-style “prepared” outcomes without API calls.
 
 ## Safety properties preserved
 

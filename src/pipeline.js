@@ -1,6 +1,5 @@
 import { MoneyPrinterTurboAdapter } from './adapters/moneyprinterturbo.js';
 import { MockRenderer } from './adapters/mock-renderer.js';
-import { OpenShortsAdapter } from './adapters/openshorts.js';
 import { ReelMakerAdapter } from './adapters/reel-maker.js';
 import { publishRenderArtifacts } from './artifact-publisher.js';
 import { FileJobStore } from './job-store.js';
@@ -14,7 +13,9 @@ import { scoreVariant } from './reel-quality.js';
 export function createRenderer(mode = 'mock', options = {}) {
   if (mode === 'stock') return new MoneyPrinterTurboAdapter(options.moneyprinterturbo);
   if (mode === 'moneyprinterturbo') return new MoneyPrinterTurboAdapter(options.moneyprinterturbo);
-  if (mode === 'openshorts' || mode === 'ugc_actor') return new OpenShortsAdapter(options.openshorts);
+  if (mode === 'openshorts' || mode === 'ugc_actor') {
+    throw new Error('openshorts/ugc_actor was removed; use mock or stock (MoneyPrinterTurbo)');
+  }
   if (mode === 'remotion' || mode === 'reel-maker') {
     return new ReelMakerAdapter({
       ...(options.reelMaker ?? options.reelmaker ?? {}),

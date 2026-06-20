@@ -12,7 +12,9 @@
 //! deferred to later phases (see PLAN.md); their trait shape is identical so
 //! they slot in without touching callers.
 
+pub mod factory;
 pub mod mock;
+pub mod money_printer;
 pub mod render_pro;
 
 use std::path::PathBuf;
@@ -94,4 +96,10 @@ pub trait RenderEngine {
     /// Render a worker-stored reel by id (the production render-pro flow). The
     /// renderer fetches/patches the reel record itself, so all we pass is the id.
     fn render_reel_by_id(&self, reel_id: &str, options: &RenderOptions) -> Result<RenderResult>;
+
+    /// Poll an async render task (MoneyPrinterTurbo). Default impl errors.
+    fn get_status(&self, external_task_id: &str) -> Result<RenderResult> {
+        let _ = external_task_id;
+        Err(anyhow::anyhow!("get_status not supported by {}", self.name()))
+    }
 }

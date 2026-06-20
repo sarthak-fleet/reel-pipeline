@@ -67,6 +67,7 @@ pub trait CommandRunner {
 }
 
 /// Real implementation backed by `std::process::Command`.
+#[derive(Clone, Copy)]
 pub struct ProcessRunner;
 
 impl CommandRunner for ProcessRunner {
