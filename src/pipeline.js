@@ -75,6 +75,7 @@ export async function renderReelVariants(brief, options = {}) {
       const score = scoreVariant({
         brief: variantBrief,
         variant: { hook: entry.hook, cta: entry.cta },
+        template: entry.template,
         proof: {
           type: raw.raw?.proof?.type,
           proofType: raw.proofType ?? raw.raw?.proof?.proofType ?? 'generated_card',
