@@ -33,7 +33,8 @@
     "smoke:artifact": "node scripts/smoke-live-artifact.js",
     "smoke:reel-maker": "node scripts/smoke-reel-maker.js",
     "smoke:mock": "node scripts/smoke-mock.js",
-    "worker:dry-run": "npx wrangler deploy --dry-run"
+    "worker:dry-run": "npx wrangler deploy --dry-run",
+    "deploy": "node scripts/manual-deploy.mjs deploy.yml ci.yml"
   },
   "engines": {
     "node": ">=20"
