@@ -22,7 +22,11 @@ export async function renderBrandContentPackage(input, options = {}) {
 
   const scenes = buildBrandScenes(contentPackage, variant);
   const sourceImagePath = path.join(workDir, 'source.png');
-  const hasSourceImage = await captureSourcePage(contentPackage.source.canonicalUrl, sourceImagePath, options);
+  const evidenceUrl = contentPackage.topic.claims[0].evidenceUrls[0];
+  const sourceCapture = options.captureSource === false
+    ? { status: 'omitted', reason: 'Explicit text-only render; visual evidence not qualified' }
+    : await captureBrandEvidence(evidenceUrl, sourceImagePath, options);
+  const hasSourceImage = sourceCapture.status === 'captured';
   const tts = options.tts ?? new KokoroTts({ voice: options.voice });
   const sceneAudio = await tts.synthesizeScenes(scenes, { outputDir: audioDir, voice: options.voice });
   const { runFfmpeg, probeDurationSeconds } = createFfmpegRunner(options);
@@ -58,6 +62,7 @@ export async function renderBrandContentPackage(input, options = {}) {
     artifact: outputPath,
     durationSeconds: Number((await probeDurationSeconds(outputPath)).toFixed(3)),
     sourceUrl: contentPackage.source.canonicalUrl,
+    sourceCapture,
     renderedAt: new Date().toISOString(),
   };
   await writeFile(path.join(workDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`);
@@ -69,7 +74,7 @@ export async function renderBrandContentPackage(input, options = {}) {
 
 export function buildBrandScenes(contentPackage, variant) {
   const claim = contentPackage.topic.claims[0];
-  const sourceHost = new URL(contentPackage.source.canonicalUrl).hostname.replace(/^www\./, '');
+  const sourceHost = new URL(claim.evidenceUrls[0]).hostname.replace(/^www\./, '');
   return [
     { kind: 'Hook', title: variant.hook, caption: contentPackage.topic.title, narration: variant.hook },
     { kind: 'Context', title: contentPackage.topic.summary, caption: 'Why this matters', narration: contentPackage.topic.summary },
@@ -81,32 +86,43 @@ export function buildBrandScenes(contentPackage, variant) {
 
 async function captureFrame(htmlPath, imagePath, options) {
   const runner = options.chromeRunner ?? defaultChromeRunner;
-  await runner(htmlPath, imagePath);
+  await runner(htmlPath, imagePath, options);
   const bytes = await readFile(imagePath);
   if (bytes.length < 10_000) throw new Error(`Chrome produced an invalid scene frame: ${imagePath}`);
 }
 
-async function captureSourcePage(url, imagePath, options) {
-  if (options.captureSource === false) return false;
+export async function captureBrandEvidence(url, imagePath, options = {}) {
+  const browser = await chromium.launch({ ...options.browserLaunch, headless: true });
+  const timeout = options.captureTimeoutMs ?? 30_000;
   try {
-    await captureBrowserPage(url, imagePath, { waitUntil: 'networkidle' });
-    return (await readFile(imagePath)).length >= 10_000;
-  } catch {
-    return false;
+    const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout });
+    if (!response?.ok()) throw new Error(`source returned HTTP ${response?.status() ?? 'unavailable'}`);
+    // Network idle and PNG size cannot distinguish an application shell from content.
+    // This checks capture readiness only; a reviewer must still verify the claim.
+    const content = page.locator('main, article, [role="main"]').first();
+    await content.waitFor({ state: 'visible', timeout });
+    await page.waitForFunction(() => {
+      const element = document.querySelector('main, article, [role="main"]');
+      return element?.innerText.replace(/\s+/g, ' ').trim().length >= 80;
+    }, null, { timeout });
+    await page.evaluate(() => document.fonts.ready);
+    await content.screenshot({ path: imagePath, type: 'png', animations: 'disabled', timeout });
+    if ((await readFile(imagePath)).length < 10_000) throw new Error('source frame is empty or invalid');
+    return { status: 'captured', requestedUrl: url, finalUrl: page.url(), selector: 'main, article, [role="main"]', claimReview: 'required' };
+  } catch (error) {
+    throw new Error(`Cannot capture usable brand evidence from ${url}: ${error.message}. Provide a reachable source with visible main/article content.`, { cause: error });
+  } finally {
+    await browser.close();
   }
 }
 
-async function defaultChromeRunner(htmlPath, imagePath) {
-  await captureBrowserPage(pathToFileURL(htmlPath).href, imagePath, { waitUntil: 'load' });
-}
-
-async function captureBrowserPage(url, imagePath, options) {
-  const browser = await chromium.launch({ headless: true, args: ['--allow-file-access-from-files'] });
+async function defaultChromeRunner(htmlPath, imagePath, options = {}) {
+  const browser = await chromium.launch({ ...options.browserLaunch, headless: true, args: ['--allow-file-access-from-files'] });
   try {
     const page = await browser.newPage({ viewport: { width: 1080, height: 1920 }, deviceScaleFactor: 1 });
-    await page.goto(url, { waitUntil: options.waitUntil, timeout: 30_000 });
+    await page.goto(pathToFileURL(htmlPath).href, { waitUntil: 'load', timeout: 30_000 });
     await page.evaluate(() => document.fonts.ready);
-    await page.waitForTimeout(150);
     await page.screenshot({ path: imagePath, type: 'png', animations: 'disabled' });
   } finally {
     await browser.close();
@@ -143,7 +159,7 @@ function renderSceneHtml(contentPackage, scene, index, total, sourceImagePath) {
 }
 
 function renderReviewHtml(contentPackage, receipt) {
-  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Review ${escapeHtml(contentPackage.topic.title)}</title><style>body{margin:0;background:#090b0c;color:#f5f7f6;font:16px/1.5 Inter,system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:28px;display:grid;grid-template-columns:minmax(260px,420px) 1fr;gap:34px}video{width:100%;aspect-ratio:9/16;background:#000}h1{font-size:32px;line-height:1.08}a{color:#76d7c4}.meta{padding-block:14px;border-top:1px solid #ffffff20}code{overflow-wrap:anywhere}@media(max-width:760px){main{grid-template-columns:1fr;padding:16px}h1{font-size:25px}}</style></head><body><main><video controls src="${escapeHtml(path.basename(receipt.artifact))}"></video><section><p>${escapeHtml(contentPackage.brand.name)} · ${escapeHtml(receipt.channel)}</p><h1>${escapeHtml(contentPackage.topic.title)}</h1><div class="meta"><strong>Approval</strong><br>${escapeHtml(contentPackage.approval.status)} · revision ${contentPackage.revision}</div><div class="meta"><strong>Source</strong><br><a href="${escapeHtml(contentPackage.source.canonicalUrl)}">${escapeHtml(contentPackage.source.canonicalUrl)}</a></div><div class="meta"><strong>Package</strong><br><code>${escapeHtml(contentPackage.id)}</code></div><div class="meta"><strong>Duration</strong><br>${receipt.durationSeconds}s</div><p>This is a local review artifact. Publishing requires a separate approved distribution receipt.</p></section></main></body></html>`;
+  return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Review ${escapeHtml(contentPackage.topic.title)}</title><style>body{margin:0;background:#090b0c;color:#f5f7f6;font:16px/1.5 Inter,system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:28px;display:grid;grid-template-columns:minmax(260px,420px) 1fr;gap:34px}video{width:100%;aspect-ratio:9/16;background:#000}h1{font-size:32px;line-height:1.08}a{color:#76d7c4}.meta{padding-block:14px;border-top:1px solid #ffffff20}code{overflow-wrap:anywhere}@media(max-width:760px){main{grid-template-columns:1fr;padding:16px}h1{font-size:25px}}</style></head><body><main><video controls src="${escapeHtml(path.basename(receipt.artifact))}"></video><section><p>${escapeHtml(contentPackage.brand.name)} · ${escapeHtml(receipt.channel)}</p><h1>${escapeHtml(contentPackage.topic.title)}</h1><div class="meta"><strong>Approval</strong><br>${escapeHtml(contentPackage.approval.status)} · revision ${contentPackage.revision}</div><div class="meta"><strong>Source</strong><br><a href="${escapeHtml(contentPackage.source.canonicalUrl)}">${escapeHtml(contentPackage.source.canonicalUrl)}</a></div><div class="meta"><strong>Visual evidence</strong><br>${escapeHtml(receipt.sourceCapture.status)} · claim review required${receipt.sourceCapture.finalUrl ? `<br><a href="${escapeHtml(receipt.sourceCapture.finalUrl)}">${escapeHtml(receipt.sourceCapture.finalUrl)}</a>` : `<br>${escapeHtml(receipt.sourceCapture.reason)}`}</div><div class="meta"><strong>Package</strong><br><code>${escapeHtml(contentPackage.id)}</code></div><div class="meta"><strong>Duration</strong><br>${receipt.durationSeconds}s</div><p>This is a local review artifact. Publishing requires a separate approved distribution receipt.</p></section></main></body></html>`;
 }
 
 function escapeHtml(value) { return String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;'); }

@@ -14,6 +14,7 @@ const result = await renderBrandContentPackage(input, {
   variantId: flags.variant,
   artifactDir: flags.out ? path.resolve(flags.out) : undefined,
   voice: flags.voice,
+  browserLaunch: flags['browser-channel'] ? { channel: flags['browser-channel'] } : undefined,
 });
 const variant = contentPackage.variants.find(
   (entry) => entry.id === (flags.variant ?? contentPackage.variants[0].id)

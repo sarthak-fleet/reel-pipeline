@@ -1,0 +1,89 @@
+{
+  "observedAt": "2026-09-07T12:22:56.602Z",
+  "scope": "Local synthetic teaching example; no real study, account, publication or paid generation",
+  "receipt": {
+    "schema": "fleet.media-receipt.v1",
+    "packageId": "high-signal:synthetic-rates-lesson",
+    "packageRevision": 1,
+    "variantId": "vertical-proof-v1",
+    "brand": "high-signal",
+    "channel": "youtube_shorts",
+    "provider": "brand-video-local",
+    "status": "rendered",
+    "artifact": "fixtures/brand-shareability/rates-lesson/high-signal-synthetic-rates-lesson.mp4",
+    "durationSeconds": 18.386,
+    "sourceUrl": "http://127.0.0.1:4179/source.html",
+    "sourceCapture": {
+      "status": "captured",
+      "requestedUrl": "http://127.0.0.1:4179/source.html",
+      "finalUrl": "http://127.0.0.1:4179/source.html",
+      "selector": "main, article, [role=\"main\"]",
+      "claimReview": "required"
+    },
+    "renderedAt": "2026-09-07T12:21:24.073Z"
+  },
+  "sha256": "adda5151007a0f41ad92978e625928521d53a29e6074b6ab2ced79eb14f44b8d",
+  "encoded": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1080,
+        "height": 1920,
+        "duration": "18.343685",
+        "nb_frames": "549"
+      },
+      {
+        "codec_name": "aac",
+        "duration": "18.386333",
+        "nb_frames": "436"
+      }
+    ],
+    "format": {
+      "duration": "18.386333",
+      "size": "499177"
+    }
+  },
+  "fullDecode": "passed",
+  "playback": [
+    {
+      "width": 390,
+      "ended": true,
+      "currentTime": 18.386333,
+      "duration": 18.386333,
+      "videoWidth": 1080,
+      "videoHeight": 1920,
+      "error": null,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1440,
+      "ended": true,
+      "currentTime": 18.386333,
+      "duration": 18.386333,
+      "videoWidth": 1080,
+      "videoHeight": 1920,
+      "error": null,
+      "horizontalOverflow": false
+    }
+  ],
+  "audio": "Actual local Kokoro narration encoded and decoded; human listening not performed",
+  "limitations": [
+    "Capture readiness is not claim verification",
+    "Local source fixture is not production product evidence",
+    "Muted headless playback is not physical-phone or listening qualification",
+    "Other render variants and publishing remain unqualified"
+  ],
+  "visualReview": {
+    "encodedFrameSeconds": [
+      1,
+      4,
+      9,
+      14,
+      17
+    ],
+    "result": "All five scenes readable; source table visibly supports the stated arithmetic; synthetic label visible",
+    "contactSheet": "contact-sheet.jpg"
+  }
+}

@@ -37,6 +37,14 @@ interface may request a write only through an explicit per-channel policy.
 
 ## Timeline
 
+- **2026-09-07:** brand capture now waits for substantive visible main/article
+  content, rejects failed/blank pages before narration, and captures the claim's
+  evidence URL with a provenance receipt. The documented CLI rendered a useful
+  synthetic completion-rates lesson: 18.386 seconds, 1080×1920 H.264/AAC.
+  Full decode and start-to-end muted playback at 390/1440 widths pass; its table
+  visibly supports the arithmetic. Real product evidence, human listening,
+  physical-phone review and publication remain open. See [qualification](docs/development/brand-render-qualification.md).
+
 - **2026-09-07:** fixed stale standalone-repository imports in both Content
   Factory render entrypoints. Brand scenes now preserve minimum reading time
   when narration is short, and receipts report measured encoded duration.

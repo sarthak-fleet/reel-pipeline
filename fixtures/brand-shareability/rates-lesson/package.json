@@ -1,0 +1,59 @@
+{
+  "schema": "fleet.content-package.v1",
+  "id": "high-signal:synthetic-rates-lesson",
+  "revision": 1,
+  "createdAt": "2026-07-12T12:00:00.000Z",
+  "brand": {
+    "slug": "high-signal"
+  },
+  "source": {
+    "adapter": "local-synthetic-teaching-fixture",
+    "sourceId": "synthetic-rates-lesson",
+    "canonicalUrl": "http://127.0.0.1:4179/source.html",
+    "generatedAt": "2026-07-12T12:00:00.000Z"
+  },
+  "topic": {
+    "title": "Compare rates, not totals",
+    "summary": "Group sizes differ, so raw totals can mislead.",
+    "audience": "Product builders",
+    "destinationUrl": "http://127.0.0.1:4179/source.html",
+    "claims": [
+      {
+        "text": "A: 8 of 10, or 80%. B: 12 of 20, or 60%.",
+        "evidenceUrls": [
+          "http://127.0.0.1:4179/source.html"
+        ]
+      }
+    ]
+  },
+  "approval": {
+    "status": "approved",
+    "approvedAt": "2026-07-12T12:05:00.000Z",
+    "approvedBy": "synthetic-local-qualification-only"
+  },
+  "variants": [
+    {
+      "id": "vertical-proof-v1",
+      "channel": "youtube_shorts",
+      "status": "approved",
+      "hook": "Twelve beats eight. Or does it?",
+      "script": "Compare completion rates when group sizes differ. Eight of ten is eighty percent. Twelve of twenty is sixty percent.",
+      "shotList": [
+        "Immediate hook",
+        "Why it matters",
+        "Visible source",
+        "Practical takeaway",
+        "Next action"
+      ],
+      "captions": [
+        "Compare rates",
+        "A: 80%. B: 60%.",
+        "Check the denominator"
+      ],
+      "visualDirection": "Use High Signal brand colors, source receipts, large captions, and no generic stock imagery.",
+      "cta": "Divide by the group size.",
+      "template": "source_proof_takeaway",
+      "durationSeconds": 25
+    }
+  ]
+}

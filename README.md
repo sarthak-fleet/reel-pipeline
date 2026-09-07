@@ -83,15 +83,15 @@ surfaces. These are generation tools, not social publishing surfaces.
 ## Remaining qualification work
 
 The [local ASCII export](docs/development/ascii-export-qualification.md) and
-[brand-render technical path](docs/development/brand-render-qualification.md) are
+[brand-render path](docs/development/brand-render-qualification.md) are
 verified within their stated limits. GitHub reconciliation on 2026-09-07 found **0 open issues and 0 open
 pull requests**, so no task was closed on the strength of this export alone.
 The following release gates remain actionable:
 
-- Replace the brand fixture's mostly blank source capture with useful, approved
-  product evidence and qualify its visual contribution. The real local render
-  now passes after import and short-narration duration repairs; its fixture
-  content is still insufficient for a useful finished video.
+- Qualify an approved real product source. The capture now rejects blank shells
+  and failed pages, and a [synthetic rates lesson](fixtures/brand-shareability/rates-lesson/review.html)
+  demonstrates a visible table supporting its narration. This local teaching
+  example does not qualify the former High Signal product claim.
 - Make the optional command smoke distinguish missing prerequisites from
   implementation failures; currently every nonzero exit is reported as skipped.
 - Review the retained export on a phone and listen to its audio. Muted desktop
