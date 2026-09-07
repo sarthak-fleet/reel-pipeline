@@ -80,6 +80,26 @@ history, and evidence-gated distribution. See
 The local control API also exposes the anonymous brand-reel, review, and studio
 surfaces. These are generation tools, not social publishing surfaces.
 
+## Remaining qualification work
+
+The [local ASCII export](docs/development/ascii-export-qualification.md) is
+verified. GitHub reconciliation on 2026-09-07 found **0 open issues and 0 open
+pull requests**, so no task was closed on the strength of this export alone.
+The following release gates remain actionable:
+
+- Repair or configure the optional brand-video smoke's local browser runtime
+  and obtain a real passing render receipt; its latest smoke was skipped.
+- Review the retained export on a phone and listen to its audio. Muted desktop
+  browser playback and extracted frames do not establish either result.
+- Qualify other renderer variants and the browser-rendered composition before
+  extending this single-export presentation claim.
+- Obtain owner review and the configured destination policy before exercising
+  publishing; collect an actual provider receipt separately from local media.
+- Complete human listening review before enabling the generated-music adapter.
+
+These are qualification gates, not completed releases. Preserve the manual
+import and zero automatic paid-generation-spend boundary above.
+
 ## Documentation policy
 
 Committed Markdown is the source of truth. Executable configuration is
