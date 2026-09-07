@@ -25,10 +25,13 @@ manifest as `draft_only`, `approval_required`, or `autonomous`.
 
 ## Quick start
 
+Use Node.js 22.16+ (CI uses Node 22), pnpm 10.33.2, and Rust stable.
+See [development setup](docs/development/setup.md) for media prerequisites.
+
 ```bash
 gh repo clone sass-maker/reel-pipeline
 cd reel-pipeline
-npm ci
+pnpm install --frozen-lockfile
 npm test
 npm run dev
 ```
@@ -86,7 +89,13 @@ The [local ASCII export](docs/development/ascii-export-qualification.md) and
 [brand-render path](docs/development/brand-render-qualification.md) are
 verified within their stated limits. GitHub reconciliation on 2026-09-07 found **0 open issues and 0 open
 pull requests**, so no task was closed on the strength of this export alone.
-The following release gates remain actionable:
+Source-tool sharing still requires an owner-selected repository license: no
+repository-wide grant currently covers the JavaScript pipeline or demo assets.
+The Rust crate’s MIT metadata does not grant rights to the whole repository.
+The synthetic local developer example needs no owner credentials; production
+publishing, other variants, and physical-phone review are separate scopes.
+
+The following broader release gates remain actionable:
 
 - Qualify an approved real product source. The capture now rejects blank shells
   and failed pages, and a [synthetic rates lesson](fixtures/brand-shareability/rates-lesson/review.html)

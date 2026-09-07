@@ -68,7 +68,13 @@ from the encoded MP4, not just HTML previews. No human listening or physical
 phone review occurred.
 
 To reproduce locally with existing Kokoro, FFmpeg and Chrome installed, serve
-`fixtures/brand-shareability/rates-lesson` on loopback port 4179, then run:
+the fixture on loopback port 4179 in a separate terminal:
+
+```bash
+python3 -m http.server 4179 --bind 127.0.0.1 --directory fixtures/brand-shareability/rates-lesson
+```
+
+Then, from the repository root, run:
 
 ```bash
 npm run render:package -- --file fixtures/brand-shareability/rates-lesson/package.json --out /tmp/reel-rates-review --browser-channel chrome

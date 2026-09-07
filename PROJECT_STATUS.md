@@ -16,6 +16,24 @@ It owns provider-neutral distribution contracts and native YouTube and
 Instagram adapters, but not credential values or provider truth. Its machine
 interface may request a write only through an explicit per-channel policy.
 
+## Local developer setup qualification
+
+On 2026-09-07, an isolated tracked-source export (without ignored owner files)
+installed all 14 npm packages from the existing pnpm cache using
+`pnpm install --frozen-lockfile --offline` on Node 22.16.0 and pnpm 10.33.2.
+All 546 Node and 68 Rust tests passed with no skipped Node tests. The documented
+synthetic rates lesson also rendered through the real CLI using cached public
+Kokoro assets, installed Chrome, and FFmpeg; the resulting MP4 passed full decode.
+This verifies clean source installation and the local teaching example, not a
+fresh operating-system setup or a fresh model download. No owner secrets were
+needed. Setup now declares the tested Node floor and actual lockfile installer.
+
+Repository-wide licensing remains pending owner choice. The Rust crate’s MIT
+metadata and upstream model rights do not establish a grant for the JavaScript
+pipeline or repository demo assets. Keep the project inactive; scoped source-tool
+sharing remains blocked on that rights decision. Publishing and other variants
+have separate acceptance requirements.
+
 ## Dependencies
 
 ### External

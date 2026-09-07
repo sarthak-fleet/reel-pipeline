@@ -3,14 +3,29 @@
 ## Install
 
 ```bash
-git clone --recurse-submodules <repo-url>
-npm ci
+git clone https://github.com/sass-maker/reel-pipeline.git
+cd reel-pipeline
+pnpm install --frozen-lockfile
 npm test
 ```
 
-Requirements: Node 20+, Rust stable, FFmpeg/ffprobe, and Playwright Chromium
-for browser-backed render paths. Optional local applications have their own
-prerequisites.
+Requirements: Node.js 22.16+ (CI tests Node 22), pnpm 10.33.2, and Rust stable.
+The test command uses Node’s experimental type stripping; Node 20 is unsupported.
+The tracked lockfile is `pnpm-lock.yaml`; `npm ci` cannot install this checkout.
+
+Browser-backed tests and renders also require FFmpeg/ffprobe and Chromium:
+
+```bash
+pnpm exec playwright install chromium
+```
+
+For the synthetic narrated video, install public local Kokoro prerequisites with
+`npm run setup:kokoro`, then follow the
+[rates lesson example](brand-render-qualification.md#follow-up-useful-synthetic-evidence).
+That example uses installed Google Chrome (`--browser-channel chrome`) and
+requires no owner credentials. Optional local applications have their own
+prerequisites. Repository licensing remains pending owner choice; successful
+setup does not establish redistribution rights.
 
 ## Environment
 
