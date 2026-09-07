@@ -1,6 +1,6 @@
 # Reel Pipeline — Project Status
 
-Last updated: 2026-08-23
+Last updated: 2026-09-07
 
 ## Why / What
 
@@ -36,6 +36,12 @@ interface may request a write only through an explicit per-channel policy.
   contracts from the repository-owned `content-factory/` component.
 
 ## Timeline
+
+- **2026-09-07:** repaired overlapping ASCII raster labels and moving particles
+  over captions, preserved supplied brief copy, and retained one readable local
+  12-second 1080×1920 H.264/AAC export with full-decode and advancing browser
+  playback evidence. See [qualification](docs/development/ascii-export-qualification.md).
+  This is one export proof; provider publication and device review remain unverified.
 
 - **2026-08-23:** documented the local video workflow recipe and episode
   manifest contracts — registry, resolved-run signature, Comfy node allowlist,

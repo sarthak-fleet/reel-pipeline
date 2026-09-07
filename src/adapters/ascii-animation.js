@@ -122,9 +122,8 @@ export class AsciiAnimationAdapter {
     const durationSeconds = clampDuration(brief.durationSeconds ?? DEFAULT_DURATION);
     const frameCount = Math.round(this.fps * durationSeconds);
     const videoPath = path.join(dir, `${stableSlug(brief.projectSlug)}-${stableSlug(brief.id)}.mp4`);
-    await mkdir(framesDir, { recursive: true });
-
     const theme = buildAsciiTheme(brief);
+    await mkdir(framesDir, { recursive: true });
     const renderLog = ['style=ascii-fable', `palette=${theme.palette.id}`, `sceneStyle=${theme.sceneStyle}`];
     let framePattern = path.join(framesDir, 'frame_%04d.ppm');
     try {
@@ -175,6 +174,7 @@ export class AsciiAnimationAdapter {
       '-c:a', 'aac',
       '-b:a', '96k',
       '-shortest',
+      '-movflags', '+faststart',
       videoPath,
     ], { timeout: 120_000 });
 
@@ -387,7 +387,7 @@ function browserHtml(theme) {
     z-index: 2;
     margin-top: 52px;
     font-size: 30px;
-    line-height: 1;
+    line-height: 1.3;
     color: var(--cream);
     text-align: center;
   }
@@ -417,7 +417,7 @@ function browserHtml(theme) {
     <pre class="art" id="art"></pre>
   </section>
   <div class="caption" id="caption"></div>
-  <div class="footer">SAME LAWS. DIFFERENT SCALE.</div>
+  <div class="footer" id="footer"></div>
 </main>
 <script>
 const theme = ${payload};
@@ -499,6 +499,7 @@ function renderArt(scene, frame) {
 window.renderAsciiFrame = (progress, frame) => {
   const index = progress < 0.36 ? 0 : progress < 0.69 ? 1 : 2;
   const scene = scenes[index];
+  document.getElementById("footer").textContent = theme.footer;
   titleEl.textContent = theme.title;
   subtitleEl.textContent = theme.subtitle;
   codeEl.textContent = [
@@ -530,7 +531,7 @@ function drawScaleFrame(scene, frame, frameCount, theme) {
   const p = frame / Math.max(1, frameCount - 1);
   scene.background();
   scene.box(1, 1, 22, 40, Math.floor(frame / 5) % 2);
-  scene.text(2.0, 2.2, theme.title, colors.cream, 1.9);
+  theme.titleLines.forEach((line, index) => scene.text(2.5, 2.2 + index * 1.5, line, colors.cream, 1.1));
   scene.mono(3.2, 5.6, [theme.subtitle], colors.amber, 0.72);
   drawCodeRail(scene, frame, theme);
 
@@ -551,8 +552,11 @@ function drawScaleFrame(scene, frame, frameCount, theme) {
     const y = 14 + ((i * 5) % 18);
     scene.cell(x, y, '.', colors.dim, 0.5);
   }
+  const caption = p < 0.36 ? theme.atomCaption : p < 0.69 ? theme.bondCaption : theme.orbitCaption;
+  scene.panel(2.5, 29.0, 19, 5.7, colors.panel);
+  scene.mono(3.0, 29.4, wrapAsciiCopy(caption, 22, 4), colors.cream, 1.05);
   scene.panel(2.5, 35.0, 19.0, 3.0, colors.rail);
-  scene.mono(3.45, 35.85, ['SAME LAWS. DIFFERENT SCALE.'], colors.cream, 0.72);
+  scene.mono(3.0, 35.85, [theme.footer], colors.cream, 0.68);
 }
 
 function drawTunnelFrame(scene, frame, frameCount, theme) {
@@ -649,7 +653,7 @@ function drawKineticAsciiFrame(scene, frame, frameCount, theme) {
 function drawAtom(scene, frame, theme) {
   const colors = theme.colors;
   const flicker = frame % 18 < 12 ? '*' : 'O';
-  scene.mono(8.4, 10.0, ['-- ATOM --'], colors.amber, 0.78);
+  scene.mono(8.4, 12.5, ['-- ATOM --'], colors.amber, 0.78);
   scene.mono(3.4, 14.0, [
     '        .       .',
     '    .     \\   /     .',
@@ -661,13 +665,12 @@ function drawAtom(scene, frame, theme) {
   ], (ch) => asciiColor(ch, { core: colors.red, wire: colors.blue }), 0.72);
   scene.cell(10, 20, flicker, colors.spark, 0.9);
   scene.cell(15, 20, flicker, colors.spark, 0.9);
-  scene.mono(3.8, 31.0, [theme.atomCaption], colors.cream, 0.68);
 }
 
 function drawBond(scene, frame, theme) {
   const colors = theme.colors;
   const phase = Math.round(Math.sin(frame * 0.12));
-  scene.mono(8.6, 10.0, ['-- BOND --'], colors.amber, 0.78);
+  scene.mono(8.6, 12.5, ['-- BOND --'], colors.amber, 0.78);
   scene.mono(4.3, 14.0 + phase * 0.15, [
     '          (O)',
     '           |',
@@ -679,13 +682,12 @@ function drawBond(scene, frame, theme) {
     '         (O)',
   ], (ch) => asciiColor(ch, { core: colors.green, wire: colors.blue }), 0.72);
   scene.cell(18, 21 + phase, '*', colors.spark, 0.9);
-  scene.mono(3.85, 31.0, [theme.bondCaption], colors.cream, 0.68);
 }
 
 function drawOrbit(scene, frame, theme) {
   const colors = theme.colors;
   const pos = orbitStar(frame);
-  scene.mono(8.0, 10.0, ['-- ORBIT --'], colors.amber, 0.78);
+  scene.mono(8.0, 12.5, ['-- ORBIT --'], colors.amber, 0.78);
   scene.mono(3.3, 14.0, [
     '      .-----------.',
     '   .-/             \\-.',
@@ -695,14 +697,13 @@ function drawOrbit(scene, frame, theme) {
     '      `----...----`',
   ], (ch) => asciiColor(ch, { core: colors.blue, wire: colors.dot }), 0.72);
   scene.cell(pos[0], pos[1], '*', colors.spark, 0.95);
-  scene.mono(4.0, 31.0, [theme.orbitCaption], colors.cream, 0.68);
 }
 
 function drawCodeRail(scene, frame, theme) {
   const colors = theme.colors;
   scene.panel(3.0, 7.5, 18.0, 4.5, colors.rail);
   const cursor = frame % 24 < 12 ? '_' : ' ';
-  scene.mono(4.0, 8.15, [
+  scene.mono(3.5, 8.15, [
     '> SCALE.RUN();',
     `STATE = [${theme.sequence.join(', ')}];`,
     `RETURN MOTION${cursor}`,
@@ -764,17 +765,23 @@ class AsciiScene {
     let cursor = x;
     for (const ch of chars) {
       this.char(cursor, y, ch, color, scale);
-      cursor += Math.max(0.72, scale * 0.74);
+      const dot = Math.max(3, Math.round(5 * scale));
+      const gap = Math.max(1, Math.round(2 * scale));
+      cursor += (5 * (dot + gap) + gap) / this.cellW;
     }
   }
 
   mono(x, y, lines, color, scale = 0.65) {
+    const dot = Math.max(3, Math.round(5 * scale));
+    const gap = Math.max(1, Math.round(2 * scale));
+    const advance = Math.max(0.58, (5 * (dot + gap) + gap) / this.cellW);
+    const lineAdvance = Math.max(0.92, (7 * (dot + gap) + 12) / this.cellH);
     lines.forEach((line, row) => {
       const chars = sanitizeText(line);
       for (let col = 0; col < chars.length; col += 1) {
         const ch = chars[col];
         const chosen = typeof color === 'function' ? color(ch, col, row) : color;
-        this.char(x + col * 0.58, y + row * 0.92, ch, chosen, scale);
+        this.char(x + col * advance, y + row * lineAdvance, ch, chosen, scale);
       }
     });
   }
@@ -809,21 +816,44 @@ class AsciiScene {
 
 export function buildAsciiTheme(brief) {
   const words = tokenize(`${brief.title} ${brief.hook} ${brief.body}`);
-  const science = words.some((word) => ['atom', 'molecule', 'orbit', 'space', 'scale', 'science'].includes(word));
+  const science = words.some((word) => ['atom', 'atoms', 'molecule', 'molecules', 'orbit', 'orbits', 'space', 'scale', 'science', 'gravity'].includes(word));
   const palette = ASCII_PALETTES[brief.renderOptions?.palette] ?? ASCII_PALETTES.amber;
+  const captionLine = String(brief.body ?? '').split('\n').find((line) => /^Captions:/i.test(line));
+  const authored = [...(captionLine ?? '').matchAll(/"([^"]+)"/g)].map((match) => match[1]);
+  const captions = authored.length === 3 ? authored : [
+    brief.hook,
+    String(brief.body ?? '').split('\n')[0].replace(/^Script:\s*/i, ''),
+    brief.cta || brief.hook,
+  ];
+  captions.forEach((caption) => wrapAsciiCopy(caption, 22, 4));
+  const title = String(brief.title || 'ASCII STORY');
   return {
+    titleLines: wrapAsciiCopy(title, 20, 2),
+    footer: science ? 'SCHEMATIC / NOT TO SCALE' : 'AN ORIGINAL ASCII STORY',
     sceneStyle: ['scale', 'tunnel', 'terrain', 'kinetic-type'].includes(brief.renderOptions?.sceneStyle)
       ? brief.renderOptions.sceneStyle
       : 'scale',
-    title: science ? 'ASCII SCALE' : 'ASCII SIGNAL',
+    title,
     subtitle: science ? 'TINY RULES / HUGE WORLDS' : 'SMALL SIGNAL / BIG STORY',
     sequence: science ? ['ATOM', 'BOND', 'ORBIT'] : ['SIGNAL', 'LINK', 'STORY'],
-    atomCaption: science ? 'MASS APPEARS AS PATTERN' : 'SIGNAL APPEARS AS PATTERN',
-    bondCaption: science ? 'PATTERNS START TO BIND' : 'PATTERNS START TO LINK',
-    orbitCaption: science ? 'SCALE BECOMES MOTION' : 'THE STORY STARTS MOVING',
+    atomCaption: captions[0],
+    bondCaption: captions[1],
+    orbitCaption: captions[2],
     palette: { id: brief.renderOptions?.palette in ASCII_PALETTES ? brief.renderOptions.palette : 'amber', ...palette },
     colors: Object.fromEntries(Object.entries(palette).map(([key, value]) => [key === 'ink' ? 'rail' : key, hexToRgb(value)])),
   };
+}
+
+export function wrapAsciiCopy(value, columns, maxLines) {
+  const lines = [''];
+  for (const word of String(value ?? '').trim().split(/\s+/)) {
+    if (word.length > columns) throw new Error('ASCII copy contains a word too wide for the frame');
+    const index = lines.length - 1;
+    if (lines[index] && lines[index].length + word.length + 1 > columns) lines.push(word);
+    else lines[index] += (lines[index] ? ' ' : '') + word;
+  }
+  if (lines.length > maxLines) throw new Error('ASCII copy exceeds the readable frame area; shorten the brief or provide three quoted Captions');
+  return lines;
 }
 
 function hexToRgb(value) {

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import test from 'node:test';
 
-import { AsciiAnimationAdapter, buildAsciiTheme } from '../src/adapters/ascii-animation.js';
+import { AsciiAnimationAdapter, buildAsciiTheme, wrapAsciiCopy } from '../src/adapters/ascii-animation.js';
 import { createDraftVideo, createRenderer } from '../src/pipeline.js';
 import { normalizeVideoBrief } from '../src/video-brief.js';
 
@@ -127,4 +128,36 @@ test('createDraftVideo can publish an ascii render result', async () => {
   assert.equal(job.status, 'video_ready');
   assert.equal(job.render.provider, 'ascii-animation');
   assert.equal(job.render.videos[0], 'https://assets.example.test/reels/ascii_brief-ascii-publish_1783036800000-science-brief-ascii-publish.mp4');
+});
+
+
+test('ASCII scenes preserve three authored captions and wrap within their reserved area', () => {
+  const captions = ['Atoms contain a nucleus and electrons.', 'Chemical bonds connect atoms into molecules.', 'Gravity keeps planets moving around stars.'];
+  const theme = buildAsciiTheme({ title: 'Matter in motion', hook: 'Three patterns of motion.', body: `Captions: ${captions.map((text) => JSON.stringify(text)).join(' / ')}` });
+  assert.equal(theme.title, 'Matter in motion');
+  assert.deepEqual([theme.atomCaption, theme.bondCaption, theme.orbitCaption], captions);
+  for (const caption of captions) {
+    const lines = wrapAsciiCopy(caption, 22, 4);
+    assert.equal(lines.join(' '), caption);
+    assert.ok(lines.every((line) => line.length <= 22));
+  }
+  assert.throws(() => wrapAsciiCopy('word '.repeat(100), 30, 4), /readable frame area/);
+});
+
+test('ASCII copy uses brief content when no three-caption script is provided', () => {
+  const theme = buildAsciiTheme({ title: 'A local story', hook: 'Start with one idea.', body: 'Script: Show one concrete example.', cta: 'Try the example.' });
+  assert.deepEqual([theme.atomCaption, theme.bondCaption, theme.orbitCaption], ['Start with one idea.', 'Show one concrete example.', 'Try the example.']);
+});
+
+
+test('retained ASCII export matches its reviewed playback receipt', async () => {
+  const root = new URL('../fixtures/ascii-shareability/', import.meta.url);
+  const receipt = JSON.parse(await readFile(new URL('qualification.json', root), 'utf8'));
+  const video = await readFile(new URL(receipt.artifact, root));
+  assert.equal(createHash('sha256').update(video).digest('hex'), receipt.sha256);
+  assert.equal(video.length, receipt.bytes);
+  assert.equal(receipt.fullDecode, 'passed');
+  assert.equal(receipt.visualReview.status, 'passed');
+  assert.ok(receipt.browserPlayback.currentTime >= 1);
+  assert.ok(receipt.browserPlayback.decodedFrames >= 20);
 });

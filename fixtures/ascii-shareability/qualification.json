@@ -1,0 +1,71 @@
+{
+  "schema": "reel-pipeline.ascii-shareability.v1",
+  "verifiedAt": "2026-09-07T09:10:23.537Z",
+  "input": "fixtures/ascii-shareability/brief.json",
+  "rights": "Original synthetic educational copy, repository procedural graphics, local synthesized tone; no third-party media.",
+  "renderer": "raster",
+  "artifact": "synthetic-science-matter-in-motion.mp4",
+  "bytes": 740248,
+  "sha256": "c9954b72a571f03ea832d7109b996e35640eb14687787145b63efd23d8219863",
+  "video": [
+    {
+      "codec_name": "h264",
+      "width": 1080,
+      "height": 1920,
+      "nb_frames": "288",
+      "duration": "12.000000",
+      "pix_fmt": "yuv420p"
+    }
+  ],
+  "audio": [
+    {
+      "codec_name": "aac",
+      "duration": "12.000000"
+    }
+  ],
+  "fullDecode": "passed",
+  "browserPlayback": {
+    "currentTime": 1.461707,
+    "duration": 12,
+    "readyState": 4,
+    "width": 1080,
+    "height": 1920,
+    "decodedFrames": 40,
+    "error": null
+  },
+  "frames": [
+    {
+      "time": 2,
+      "file": "frame-2s.png"
+    },
+    {
+      "time": 6,
+      "file": "frame-6s.png"
+    },
+    {
+      "time": 10,
+      "file": "frame-10s.png"
+    }
+  ],
+  "visualReview": {
+    "status": "passed",
+    "reviewer": "Codex frame inspection",
+    "timesSeconds": [
+      2,
+      6,
+      10
+    ],
+    "findings": [
+      "Title and scene labels separated from the code rail",
+      "All three authored captions readable on separate lines",
+      "Moving particles remain behind the caption panel",
+      "Schematic caveat visible"
+    ]
+  },
+  "limitations": [
+    "No narration or listening review",
+    "Schematic art is not a scientific simulation",
+    "Local file playback only; no provider publication or mobile-device verification"
+  ],
+  "rendererSourceSha256": "5dc5465e8a9f8237a3145ba110c28967cfbc962f8292b32c30a83384a3e8b459"
+}

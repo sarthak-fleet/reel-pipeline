@@ -1,0 +1,15 @@
+{
+  "id": "matter-in-motion",
+  "projectSlug": "synthetic-science",
+  "channel": "youtube_shorts",
+  "title": "Matter in motion",
+  "hook": "Three patterns of motion.",
+  "body": "Captions: \"Atoms contain a nucleus and electrons.\" / \"Chemical bonds connect atoms into molecules.\" / \"Gravity keeps planets moving around stars.\"",
+  "cta": "Look for the force behind the motion.",
+  "renderMode": "ascii",
+  "durationSeconds": 12,
+  "renderOptions": {
+    "palette": "cobalt",
+    "sceneStyle": "scale"
+  }
+}
