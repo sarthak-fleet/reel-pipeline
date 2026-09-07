@@ -1,0 +1,59 @@
+{
+  "observedAt": "2026-09-07T11:33:13.679Z",
+  "scope": "Local draft technical qualification only; synthetic approved fixture; no publication, paid generation or account",
+  "input": "test/fixtures/approved-content-package.json",
+  "artifact": "fixtures/brand-shareability/brand-fixture.mp4",
+  "sha256": "38202bafa7ac9c3d3a8681850c429e7102fda573e361b043e4dbadc2be187245",
+  "encoded": {
+    "programs": [],
+    "stream_groups": [],
+    "streams": [
+      {
+        "codec_name": "h264",
+        "width": 1080,
+        "height": 1920,
+        "duration": "16.684310",
+        "nb_frames": "500"
+      },
+      {
+        "codec_name": "aac",
+        "duration": "16.727000",
+        "nb_frames": "396"
+      }
+    ],
+    "format": {
+      "duration": "16.727000",
+      "size": "434585"
+    }
+  },
+  "reportedDurationSeconds": 16.727,
+  "fullDecode": "passed",
+  "playback": [
+    {
+      "width": 390,
+      "currentTime": 1.512907,
+      "duration": 16.727,
+      "videoWidth": 1080,
+      "videoHeight": 1920,
+      "error": null,
+      "horizontalOverflow": false
+    },
+    {
+      "width": 1440,
+      "currentTime": 1.506338,
+      "duration": 16.727,
+      "videoWidth": 1080,
+      "videoHeight": 1920,
+      "error": null,
+      "horizontalOverflow": false
+    }
+  ],
+  "audio": "Actual existing local Kokoro narration; AAC encoded and decoded; human listening not performed",
+  "presentation": "Evidence scene contains a mostly blank captured source application shell; text layout readable but source visual provides insufficient evidence",
+  "limitations": [
+    "Not a useful finished product video",
+    "Synthetic fixture approval is not owner approval to publish",
+    "Headless phone-width viewport is not a physical phone test",
+    "render:pro startup guard verified only; remote render handoff not run"
+  ]
+}

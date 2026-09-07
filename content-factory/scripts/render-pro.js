@@ -23,12 +23,12 @@ import { access, copyFile, mkdir, readFile, rm, stat, writeFile } from 'node:fs/
 import path from 'node:path';
 import { promisify } from 'node:util';
 
-import { selectGrokVideoAsset } from '../../reel-pipeline/src/adapters/grok-video.js';
+import { selectGrokVideoAsset } from '../../src/adapters/grok-video.js';
 import {
   captureScrollTour,
   recordScreencast,
   recordScrollScreencast,
-} from '../../reel-pipeline/scripts/cdp-capture.js';
+} from '../../scripts/cdp-capture.js';
 import { emitArtifactManifest, hashCanonicalJson } from '../src/manifest.js';
 
 const execFileAsync = promisify(execFile);

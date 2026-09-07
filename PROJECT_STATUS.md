@@ -37,6 +37,14 @@ interface may request a write only through an explicit per-channel policy.
 
 ## Timeline
 
+- **2026-09-07:** fixed stale standalone-repository imports in both Content
+  Factory render entrypoints. Brand scenes now preserve minimum reading time
+  when narration is short, and receipts report measured encoded duration.
+  Actual local Kokoro/Chromium/FFmpeg rendering produced a 16.727-second
+  1080×1920 H.264/AAC draft with full decode and advancing browser playback at
+  390/1440 widths. Its source visual is mostly blank, so this remains technical
+  proof rather than a sharing pass. See [qualification](docs/development/brand-render-qualification.md).
+
 - **2026-09-07:** repaired overlapping ASCII raster labels and moving particles
   over captions, preserved supplied brief copy, and retained one readable local
   12-second 1080×1920 H.264/AAC export with full-decode and advancing browser

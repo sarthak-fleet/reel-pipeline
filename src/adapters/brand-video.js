@@ -27,7 +27,6 @@ export async function renderBrandContentPackage(input, options = {}) {
   const sceneAudio = await tts.synthesizeScenes(scenes, { outputDir: audioDir, voice: options.voice });
   const { runFfmpeg, probeDurationSeconds } = createFfmpegRunner(options);
   const sceneFiles = [];
-  const sceneDurations = [];
 
   for (let index = 0; index < scenes.length; index += 1) {
     const scene = scenes[index];
@@ -40,7 +39,6 @@ export async function renderBrandContentPackage(input, options = {}) {
     const duration = Math.max(2.8, await probeDurationSeconds(sceneAudio[index].path));
     await renderMotionScene({ imagePath, audioPath: sceneAudio[index].path, outputPath: videoPath, duration, runFfmpeg, index });
     sceneFiles.push(videoPath);
-    sceneDurations.push(duration);
   }
 
   const concatPath = path.join(workDir, 'concat.txt');
@@ -58,7 +56,7 @@ export async function renderBrandContentPackage(input, options = {}) {
     provider: 'brand-video-local',
     status: 'rendered',
     artifact: outputPath,
-    durationSeconds: Number(sceneDurations.reduce((sum, value) => sum + value, 0).toFixed(3)),
+    durationSeconds: Number((await probeDurationSeconds(outputPath)).toFixed(3)),
     sourceUrl: contentPackage.source.canonicalUrl,
     renderedAt: new Date().toISOString(),
   };
@@ -121,7 +119,8 @@ async function renderMotionScene({ imagePath, audioPath, outputPath, duration, r
   await runFfmpeg([
     '-y', '-loop', '1', '-framerate', '30', '-i', imagePath, '-i', audioPath, '-t', duration.toFixed(3),
     '-vf', `scale=1080:1920,zoompan=z='${zoom}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d=1:s=1080x1920:fps=30,fade=t=in:st=0:d=0.18,fade=t=out:st=${fadeOut}:d=0.18,format=yuv420p`,
-    '-af', `afade=t=in:st=0:d=0.08,afade=t=out:st=${Math.max(0, duration - 0.12).toFixed(3)}:d=0.12`,
+    // Keep short narration from ending the scene before its minimum reading time.
+    '-af', `apad,afade=t=in:st=0:d=0.08,afade=t=out:st=${Math.max(0, duration - 0.12).toFixed(3)}:d=0.12`,
     '-map', '0:v:0', '-map', '1:a:0', '-c:v', 'libx264', '-preset', 'medium', '-crf', '19', '-pix_fmt', 'yuv420p',
     '-c:a', 'aac', '-b:a', '160k', '-shortest', outputPath,
   ]);

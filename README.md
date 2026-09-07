@@ -82,13 +82,18 @@ surfaces. These are generation tools, not social publishing surfaces.
 
 ## Remaining qualification work
 
-The [local ASCII export](docs/development/ascii-export-qualification.md) is
-verified. GitHub reconciliation on 2026-09-07 found **0 open issues and 0 open
+The [local ASCII export](docs/development/ascii-export-qualification.md) and
+[brand-render technical path](docs/development/brand-render-qualification.md) are
+verified within their stated limits. GitHub reconciliation on 2026-09-07 found **0 open issues and 0 open
 pull requests**, so no task was closed on the strength of this export alone.
 The following release gates remain actionable:
 
-- Repair or configure the optional brand-video smoke's local browser runtime
-  and obtain a real passing render receipt; its latest smoke was skipped.
+- Replace the brand fixture's mostly blank source capture with useful, approved
+  product evidence and qualify its visual contribution. The real local render
+  now passes after import and short-narration duration repairs; its fixture
+  content is still insufficient for a useful finished video.
+- Make the optional command smoke distinguish missing prerequisites from
+  implementation failures; currently every nonzero exit is reported as skipped.
 - Review the retained export on a phone and listen to its audio. Muted desktop
   browser playback and extracted frames do not establish either result.
 - Qualify other renderer variants and the browser-rendered composition before

@@ -2,8 +2,8 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { normalizeContentPackage } from '../../reel-pipeline/src/content-package.js';
-import { renderBrandContentPackage } from '../../reel-pipeline/src/adapters/brand-video.js';
+import { normalizeContentPackage } from '../../src/content-package.js';
+import { renderBrandContentPackage } from '../../src/adapters/brand-video.js';
 import { emitArtifactManifest, hashCanonicalJson } from '../src/manifest.js';
 
 const flags = parseFlags(process.argv.slice(2));
